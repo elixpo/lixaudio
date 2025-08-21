@@ -2,3 +2,4 @@
 __pycache__/
 higgs_audio_env/
 pretrained_models/
+genAudio/
