@@ -26,14 +26,14 @@ Audio Pollinations is a modular Python framework for advanced audio processing, 
 
 ```mermaid
 flowchart TD
-    A[User/API Request] --> B[Server (server.py)]
-    B --> C[Intent Handler (intent.py)]
+    A[User/API Request] --> B[Server]
+    B --> C[Intent Handler]
     C --> D{Request Type}
-    D -- "STT" --> E[Speech-to-Text (stt.py)]
-    D -- "TTS" --> F[Text-to-Speech (tts.py)]
-    D -- "Synthesis" --> G[Synthesis Engine (synthesis.py)]
-    D -- "Transcribe" --> H[Transcription Module (transcribe.py)]
-    E --> I[Semantic Module (boson_multimodal/audio_processing/semantic_module.py)]
+    D -- "STT" --> E[Speech-to-Text]
+    D -- "TTS" --> F[Text-to-Speech]
+    D -- "Synthesis" --> G[Synthesis Engine]
+    D -- "Transcribe" --> H[Transcription Module]
+    E --> I[Semantic Module]
     F --> I
     G --> I
     H --> I
