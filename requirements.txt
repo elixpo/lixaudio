@@ -22,3 +22,6 @@ accelerate>=0.26.0
 fastapi
 uvicorn
 uvloop
+flask
+flask-core
+dotenv

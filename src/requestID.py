@@ -3,7 +3,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import uuid
 
 def reqID():
-    return str(uuid.uuid4())
+    return str(uuid.uuid4())[:10]
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):

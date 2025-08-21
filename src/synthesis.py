@@ -1,6 +1,7 @@
-
+import json
 from typing import Optional
 from boson_multimodal.serve.serve_engine import HiggsAudioServeEngine
+from boson_multimodal.data_types import ChatMLSample, Message, AudioContent
 from fastapi import HTTPException
 from utility import set_random_seed
 from loguru import logger
@@ -9,41 +10,63 @@ import traceback
 import torch
 import io
 import torchaudio
-import os
+import asyncio
+from templates import create_speaker_chat
+import base64
 
 higgs_engine: Optional[HiggsAudioServeEngine] = None
 
 
+def encode_audio_base64(audio_path: str) -> str:
+    with open(audio_path, "rb") as f:
+        return base64.b64encode(f.read()).decode("utf-8")
+
+
+def reconstruct_message(m):
+    content = m["content"]
+    if isinstance(content, list):
+        content = [AudioContent(**c) for c in content]
+    return Message(role=m["role"], content=content)
+
 async def synthesize_speech(
-    chattemplate,
-    temp_audio_path: Optional[str] = None,
-    seed: Optional[int] = None
+    chatTemplate_path: str,
+    seed: Optional[int] = None,
+    higgs_engine: Optional[HiggsAudioServeEngine] = None
 ) -> bytes:
     if higgs_engine is None:
         raise HTTPException(status_code=500, detail="TTS engine not initialized")
     try:
-        temperature: float = 0.7,
-        top_p: float = 0.95,
-        top_k: int = 50,
+
+        # with open(chatTemplate_path, "r", encoding="utf-8") as f:
+        #     messages = json.load(f)   
+        # chatTemplate = ChatMLSample(messages=[reconstruct_message(m) for m in messages])
+
+
+        chatTemplate = chatTemplate_path
+        logger.info(f"Processing chat template for synthesis")
+        temperature: float = 0.6
+        top_p: float = 0.95
+        top_k: int = 50
         set_random_seed(seed)
         try:
             response = higgs_engine.generate(
-                chat_ml_sample=chattemplate,
+                chat_ml_sample=chatTemplate,
                 max_new_tokens=1024,
                 temperature=temperature,
+                force_audio_gen=True,
                 top_k=top_k if top_k > 0 else None,
                 top_p=top_p,
                 stop_strings=DEFAULT_STOP_STRINGS,
                 ras_win_len=7,
                 ras_win_max_num_repeat=2,
-                force_audio_gen=True
             )
+            logger.info(f"Waiting for audio synthesis")
         except Exception as gen_error:
             logger.error(f"Generation error: {gen_error}")
             logger.error(f"Generation traceback: {traceback.format_exc()}")
             logger.info("Retrying with minimal parameters...")
             response = higgs_engine.generate(
-                chat_ml_sample=chattemplate,
+                chat_ml_sample=chatTemplate,
                 max_new_tokens=512,
                 temperature=0.8,
                 force_audio_gen=True
@@ -61,14 +84,28 @@ async def synthesize_speech(
         logger.info(f"Generated audio: {len(audio_bytes)} bytes at {sample_rate}Hz")
         return audio_bytes
     except Exception as e:
-            logger.error(f"Synthesis error: {traceback.format_exc()}")
-            raise HTTPException(status_code=500, detail=f"Synthesis failed: {str(e)}")
-    finally:
-        if temp_audio_path:
-            try:
-                os.remove(temp_audio_path)
-                logger.info(f"Temporary audio file {temp_audio_path} cleaned up")
-            except Exception as cleanup_error:
-                logger.error(f"Failed to clean up temporary audio file: {cleanup_error}")
+        logger.error(f"Synthesis error: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Synthesis failed: {str(e)}")
 
+if __name__ == "__main__":
     
+
+    async def main():
+        global higgs_engine
+        # chatTemplate = "/tmp/higgs/request224/chatTemplate.json"
+        cloneAudio = "audio.wav"
+        base64 = encode_audio_base64(cloneAudio)
+        chatTemplate = create_speaker_chat(
+            text = "This is a test audio being generated as a part of the api response check",
+            requestID = "request12",
+            system = "You are a voice synthesis engine. Speak the user’s text exactly and only as written. Do not add extra words, introductions, or confirmations.",
+            clone_audio_path = base64,
+            clone_audio_transcript = None
+        )
+        higgs_engine = HiggsAudioServeEngine("bosonai/higgs-audio-v2-generation-3B-base", "bosonai/higgs-audio-v2-tokenizer")
+        audio_bytes = await synthesize_speech(chatTemplate, higgs_engine=higgs_engine)
+        with open("output3.wav", "wb") as f:
+            f.write(audio_bytes)
+        print("Audio saved as output3.wav")
+
+    asyncio.run(main())

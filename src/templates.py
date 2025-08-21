@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 import os
 from boson_multimodal.data_types import ChatMLSample, Message, AudioContent
@@ -5,76 +6,108 @@ from boson_multimodal.serve.serve_engine import HiggsAudioServeEngine
 from loguru import logger
 from utility import normalize_text
 import sys
+from config import TEMP_SAVE_DIR
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 higgs_engine: Optional[HiggsAudioServeEngine] = None
 
-
 def create_speaker_chat(
     text: str,
     requestID: str,
-    system=None,
-    reference_audio_data: Optional[str] = None,
-    reference_audio_text: Optional[str] = None
+    system: Optional[str] = None,
+    clone_audio_path: Optional[str] = None,
+    clone_audio_transcript: Optional[str] = None
 ) -> ChatMLSample:
-    if not system: 
-        systemPromptWrapper: str = """
-        "<|scene_desc_start|>\n"
-        "If no instructions are provided follow these -- "
-        "Sound totally human: it’s okay to say things like ‘um’, ‘hmm’, or take a short breath before a big detail. Feel free to *slightly* stutter, casually reword something, or chuckle if the moment’s funny — that’s what makes it real. "
-        "Add light humor where it fits — just subtle, natural stuff. If something sounds ridiculous or cool, say it like you mean it. Imagine you’re on a podcast and your goal is to keep listeners smiling and hooked. "
-        "Speed up naturally — you’re excited to tell this story — but still clear. Use pauses for effect, like after a big stat, or before a surprising twist. Don’t rush, but don’t drag either. "
-        "Smile through your voice. Be curious, expressive, slightly sassy if it works. Bring real charm, like you’re sharing this over coffee with a friend. "
-        "No robotic reading. No filler. No fake facts. Just bring the script to life with humor, breath, warmth, and energy. "
-        "The whole thing should feel like a fun, punchy, real-person monologue that lasts 3 to 4 minutes, tops. Leave listeners grinning, curious, or saying ‘whoa’."
-        "Remember, you’re not just reading a script — you’re performing it with personality and flair!"
-        "<|scene_desc_end|>"
-        """
-    else:
-        systemPromptWrapper: str = f"""
-        "Create natural-sounding audio, with breathing, pauses and hums which will set a clear mood of the user " \
-        "adapt to the provided instruction, if given dynamically"
+    logger.info(f"Creating chat template for request {requestID} with text: {text}")
+    messages = []
+    if system:
+        if "<|scene_desc_start|>" not in system or "<|scene_desc_end|>" not in system:
+            systemPromptWrapper: str = f"""
+                (
+                Generate audio following instruction.\n
+                <|scene_desc_start|>\n
+                "{system}"
+                <|scene_desc_end|>
+                )
+            """
+        else:
+            systemPromptWrapper: str = system
+
         
-        "<|scene_desc_start|>\n"
-        "{system}\n"
-        "<|scene_desc_end|>"
-        """
-
-    userPromptWrapper: str = f"""
-    <|generation_instruction_start|>
-    {text}
-    <|generation_instruction_start|>
-    """
-
-    messages = [
-        Message(
-            role="system",
-            content=systemPromptWrapper,
-        )
-    ]
-
-    if reference_audio_data:
         messages.append(
             Message(
-                role="Assistant",
-                content=AudioContent(raw_audio=reference_audio_data, audio_url="placeholder"),
+                role="system",
+                content=systemPromptWrapper,
             )
         )
-        if reference_audio_text:
+
+
+    if clone_audio_path:
+        # with open(clone_audio_path, "r") as f:
+        #     reference_audio_data = f.read()
+        
+        if clone_audio_transcript:
             messages.append(
                 Message(
                     role="user",
-                    content=normalize_text(reference_audio_text),
+                    content=normalize_text(clone_audio_transcript),
                 )
             )
+        else:
+            messages.append(
+                Message(
+                    role="user",
+                    content="Please clone this voice.",
+                )
+            )
+        
+        messages.append(
+            Message(
+                role="assistant",  
+                content=[AudioContent(raw_audio=clone_audio_path, audio_url="")],
+            )
+        )
 
     messages.append(
         Message(
             role="user",
-            content=normalize_text(userPromptWrapper),
+            content=text
         )
     )
+
+    # logger.info(f"Created chat template with {len(messages)} messages for request {requestID}")
+    # os.makedirs(f"{TEMP_SAVE_DIR}{requestID}", exist_ok=True)
     
-    logger.info(f"Creating chat template with {len(messages)} messages for request {requestID}")
+    # def serialize_message(msg: Message):
+    #     # Handles both string and list-of-AudioContent for content
+    #     if isinstance(msg.content, str):
+    #         content = msg.content
+    #     elif isinstance(msg.content, list):
+    #         # Ensure all items are dicts (for AudioContent or future types)
+    #         content = [c.__dict__ if hasattr(c, "__dict__") else c for c in msg.content]
+    #     else:
+    #         # Fallback for unexpected types
+    #         content = str(msg.content)
+    #     return {
+    #         "role": msg.role,
+    #         "content": content
+    #     }
+
+    # serialized_messages = [serialize_message(m) for m in messages]
+
+    # chat_template_path = f"{TEMP_SAVE_DIR}{requestID}/chatTemplate.json"
+    # with open(chat_template_path, "w", encoding="utf-8") as f:
+    #     json.dump(serialized_messages, f, ensure_ascii=False, indent=2)
+
     return ChatMLSample(messages=messages)
+
+
+if __name__ == "__main__":
+    template = create_speaker_chat(
+        "Woohooo!! This is super awesomeeeee!!!",
+        "request12",
+        "An energetic ambience! Don't add any overhead sounds or tokens, just say as much",
+    )
+    print(template)
+    print(f"Chat template saved to {template}")
