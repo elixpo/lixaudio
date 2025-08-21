@@ -25,7 +25,7 @@ Audio Pollinations is a modular Python framework for advanced audio processing, 
 ## System Architecture
 
 ```mermaid
-flowchart TD
+flowchart LR
     A[User/API Request] --> B[Server]
     B --> C[Intent Handler]
     C --> D{Request Type}
