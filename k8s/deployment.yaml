@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: audio-pollinations
 spec:
-  replicas: 5
+  replicas: 3
   selector:
     matchLabels:
       app: audio-pollinations
@@ -17,7 +17,7 @@ spec:
           image: elixpo/audio-pollinations:latest
           imagePullPolicy: Always  
           ports:
-            - containerPort: 5000
+            - containerPort: 8000
           envFrom:
             - configMapRef:
                 name: audio-pollinations
@@ -25,8 +25,11 @@ spec:
                 name: audio-pollinations-secrets
           resources:
             requests:
-              cpu: "250m"
-              memory: "512Mi"
-            limits:
               cpu: "1"
-              memory: "1Gi"
+              memory: "2Gi"
+              ephemeral-storage: "5Gi"
+            limits:
+              cpu: "2"
+              memory: "4Gi"
+              ephemeral-storage: "30Gi"
+              nvidia.com/gpu: 1

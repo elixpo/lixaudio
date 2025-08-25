@@ -15,6 +15,6 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-EXPOSE 5000
+EXPOSE 8000
 ENV FLASK_APP=src/app.py
 CMD ["python3", "src/app.py"]
