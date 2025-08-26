@@ -43,7 +43,7 @@ for i in {1..10}; do
     sleep 3
 done
 
-gunicorn -w 30 -b 0.0.0.0:8000 --worker-class gevent --worker-connections 1000 src.app:app &
+gunicorn -w 15 -b 0.0.0.0:8000 --worker-class gevent --worker-connections 1000 src.app:app &
 FLASK_APP_PID=$!
 
 sleep 5
