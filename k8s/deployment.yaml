@@ -33,17 +33,3 @@ spec:
               memory: "4Gi"
               ephemeral-storage: "30Gi"
               nvidia.com/gpu: 1
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: audio-pollinations-service
-spec:
-  selector:
-    app: audio-pollinations
-  ports:
-    - protocol: TCP
-      port: 8000        
-      targetPort: 8000  
-      nodePort: 30080   
-  type: NodePort
