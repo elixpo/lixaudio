@@ -1,13 +1,16 @@
-from src.templates import create_speaker_chat
-from src.model_client import model_client
-from src.systemInstruction import generate_higgs_system_instruction
-from src.intent import getIntentType
-from src.utility import encode_audio_base64, validate_and_decode_base64_audio, save_temp_audio
-from src.voiceMap import VOICE_BASE64_MAP
+from templates import create_speaker_chat
+from synthesis import synthesize_speech
+from systemInstruction import generate_higgs_system_instruction
+from intent import getIntentType
+from utility import encode_audio_base64, validate_and_decode_base64_audio, save_temp_audio
+from load_models import audio_model
+from voiceMap import VOICE_BASE64_MAP
 import asyncio
 from typing import Optional
 
-async def generate_tts(text: str, requestID: str, system: Optional[str] = None, clone_text: Optional[str] = None, voice: Optional[str] = "alloy") -> bytes:
+
+
+async def generate_tts(text: str,  requestID: str, system: Optional[str] = None, clone_text: Optional[str] = None, voice: Optional[str] = "alloy") -> bytes:
     if (voice):
         with open(voice, "r") as f:
             audio_data = f.read()
@@ -30,7 +33,7 @@ async def generate_tts(text: str, requestID: str, system: Optional[str] = None, 
             system = await generate_higgs_system_instruction(text)
         else:
             system = f"""
-            "You are a voice synthesis engine. Speak the user's text exactly and only as written. Do not add extra words, introductions, or confirmations.\n"
+            "You are a voice synthesis engine. Speak the user’s text exactly and only as written. Do not add extra words, introductions, or confirmations.\n"
             "Apply the emotions as written in the user prompt.\n"
             "Generate audio following instruction.\n"
             "<|scene_desc_start|>\n"
@@ -38,22 +41,22 @@ async def generate_tts(text: str, requestID: str, system: Optional[str] = None, 
             "<|scene_desc_end|>"
             """
         print(f"The formatted system instruction is:- {system}")
-        prepareChatTemplate = create_speaker_chat(
-            text=content,
-            requestID=requestID,
-            system=system,
-            clone_audio_path=clone_path,
-            clone_audio_transcript=clone_text
+        prepareChatTemplate =  create_speaker_chat(
+            text = content,
+            requestID = requestID,
+            system = system,
+            clone_audio_path = clone_path,
+            clone_audio_transcript = clone_text
         )
-        # Use model client instead of direct model access
-        audio_bytes = await model_client.synthesize_speech(prepareChatTemplate, requestID)
+        # print(f"The prepared chat template is {prepareChatTemplate}")
+        audio_bytes = await synthesize_speech(prepareChatTemplate, higgs_engine=audio_model)
         return audio_bytes
     elif type == "REPLY":
         if system is None:
             system = await generate_higgs_system_instruction(text)
         else: 
             system = f"""
-            "You are a voice synthesis engine. Speak the user's text exactly and only as written. Do not add extra words, introductions, or confirmations.\n"
+            "You are a voice synthesis engine. Speak the user’s text exactly and only as written. Do not add extra words, introductions, or confirmations.\n"
             "Apply the emotions as written in the user prompt.\n"
             "Generate audio following instruction.\n"
             "<|scene_desc_start|>\n"
@@ -61,17 +64,17 @@ async def generate_tts(text: str, requestID: str, system: Optional[str] = None, 
             "<|scene_desc_end|>"
             """
         print(f"The formatted system instruction is:- {system}")
-        prepareChatTemplate = create_speaker_chat(
-            text=content,
-            requestID=requestID,
+        prepareChatTemplate =  create_speaker_chat(
+            text = content,
+            requestID = requestID,
             system=system,
             clone_audio_path=clone_path,
             clone_audio_transcript=clone_text
         )
         print(f"The prepared chat template is {prepareChatTemplate}")
-        # Use model client instead of direct model access
-        audio_bytes = await model_client.synthesize_speech(prepareChatTemplate, requestID)
+        audio_bytes = await synthesize_speech(prepareChatTemplate, higgs_engine=audio_model)
         return audio_bytes
+
 
 if __name__ == "__main__":
     async def main():

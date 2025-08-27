@@ -4,7 +4,7 @@ import json
 import base64
 from loguru import logger
 from typing import Optional
-from src.boson_multimodal.data_types import ChatMLSample, Message, AudioContent
+from boson_multimodal.data_types import ChatMLSample, Message, AudioContent
 import threading
 
 MODEL_SERVER_URL = "http://localhost:8001"

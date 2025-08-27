@@ -2,11 +2,11 @@ from loguru import logger
 from typing import Optional
 import asyncio
 from dotenv import load_dotenv
-from src.systemInstruction import generate_higgs_system_instruction
-from src.transcribe import transcribe_audio_from_base64
-from src.utility import encode_audio_base64, save_temp_audio
-from src.intent import getIntentType
-import src.loggerConfig
+from systemInstruction import generate_higgs_system_instruction
+from transcribe import transcribe_audio_from_base64
+from utility import encode_audio_base64, save_temp_audio
+from intent import getIntentType
+import loggerConfig
 load_dotenv()
 
 

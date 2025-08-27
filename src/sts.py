@@ -1,12 +1,12 @@
-from src.systemInstruction import generate_higgs_system_instruction
-from src.utility import encode_audio_base64, save_temp_audio, validate_and_decode_base64_audio
-from src.templates import create_speaker_chat
-from src.model_client import model_client
-from src.stt import generate_stt
+from systemInstruction import generate_higgs_system_instruction
+from utility import encode_audio_base64, save_temp_audio, validate_and_decode_base64_audio
+from templates import create_speaker_chat
+from model_client import model_client
+from stt import generate_stt
 import asyncio
 from typing import Optional
-from src.voiceMap import VOICE_BASE64_MAP
-import src.loggerConfig
+from voiceMap import VOICE_BASE64_MAP
+import loggerConfig
 
 async def generate_sts(text: str, audio_base64_path: str, requestID: str, system: Optional[str] = None, clone_text: Optional[str] = None, voice: Optional[str] = "alloy") -> str:
     if (voice):

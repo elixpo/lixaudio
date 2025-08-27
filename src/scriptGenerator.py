@@ -4,7 +4,7 @@ from typing import Optional
 import os 
 from loguru import logger
 import asyncio 
-import src.loggerConfig
+import loggerConfig
 import random
 load_dotenv()
 

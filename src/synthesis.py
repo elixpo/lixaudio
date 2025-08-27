@@ -8,12 +8,12 @@ import io
 import torchaudio
 import asyncio
 import base64
-from src.config import DEFAULT_STOP_STRINGS, SAMPLE_RATE
-from src.boson_multimodal.serve.serve_engine import HiggsAudioServeEngine
-from src.boson_multimodal.data_types import ChatMLSample, Message, AudioContent
-from src.templates import create_speaker_chat
-import src.loggerConfig
-from src.utility import set_random_seed
+from config import DEFAULT_STOP_STRINGS, SAMPLE_RATE
+from boson_multimodal.serve.serve_engine import HiggsAudioServeEngine
+from boson_multimodal.data_types import ChatMLSample, Message, AudioContent
+from templates import create_speaker_chat
+import loggerConfig
+from utility import set_random_seed
 
 
 higgs_engine: Optional[HiggsAudioServeEngine] = None

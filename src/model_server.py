@@ -10,9 +10,9 @@ import uvicorn
 from loguru import logger
 
 # Import models directly here (only loaded once)
-from src.boson_multimodal.serve.serve_engine import HiggsAudioServeEngine
-from src.boson_multimodal.data_types import ChatMLSample, Message, AudioContent
-from src.config import TRANSCRIBE_MODEL_SIZE, AUDIO_MODEL_PATH, AUDIO_TOKENIZER_PATH
+from boson_multimodal.serve.serve_engine import HiggsAudioServeEngine
+from boson_multimodal.data_types import ChatMLSample, Message, AudioContent
+from config import TRANSCRIBE_MODEL_SIZE, AUDIO_MODEL_PATH, AUDIO_TOKENIZER_PATH
 import whisper
 
 app = FastAPI()
@@ -94,7 +94,7 @@ async def synthesize_speech_endpoint(request: SynthesisRequest):
         chat_template = deserialize_chat_template(request.chat_template)
         
         # Call the actual synthesis function
-        from src.synthesis import synthesize_speech
+        from synthesis import synthesize_speech
         audio_bytes = await synthesize_speech(chat_template, higgs_engine=audio_model)
         
         # Encode audio bytes as base64 for JSON response

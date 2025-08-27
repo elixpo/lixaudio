@@ -1,4 +1,4 @@
-from src.model_client import model_client
+from model_client import model_client
 from loguru import logger
 import asyncio
 
