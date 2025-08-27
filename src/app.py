@@ -16,10 +16,34 @@ import logging
 from voiceMap import VOICE_BASE64_MAP
 import loggerConfig
 from server import run_audio_pipeline
+import uuid
+import multiprocessing as mp
+from fastapi import FastAPI, Request, HTTPException, Query
+from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+import io
+
+
+
+
+request_queue = None
+response_queue = None
+worker_process = None
+
+def init_worker():
+    """Initialize the worker process"""
+    global request_queue, response_queue, worker_process
+    from model_server import model_worker
+    from model_service import init_model_service
+    
+    request_queue = mp.Queue()
+    response_queue = mp.Queue()
+    worker_process = mp.Process(target=model_worker, args=(request_queue, response_queue))
+    worker_process.start()
+    init_model_service(request_queue, response_queue)
 
 app = Flask(__name__)
 CORS(app)
-
 
 @app.before_request
 def before_request():
@@ -41,8 +65,6 @@ def health_check():
             "POST": "/audio"
         }
     })
-
-
 
 @app.route("/audio", methods=["GET", "POST"])
 def audio_endpoint():
@@ -219,7 +241,19 @@ def internal_error(e):
     return jsonify({"error": {"message": "Internal server error", "code": 500}}), 500
 
 if __name__ == "__main__":
+    mp.set_start_method('spawn', force=True)
+    init_worker()
     host = "0.0.0.0"
     port = 8000
     logger.info(f"Starting Elixpo Audio API Server at {host}:{port}")
-    app.run(host=host, port=port, debug=True)
+
+    try:
+        # Use Flask's built-in server with threading support
+        app.run(host=host, port=port, debug=False, threaded=True)
+    finally:
+        # Clean up worker process
+        if worker_process and worker_process.is_alive():
+            request_queue.put("STOP")
+            worker_process.join(timeout=5)
+            if worker_process.is_alive():
+                worker_process.terminate()

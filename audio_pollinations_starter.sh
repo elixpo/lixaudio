@@ -1,4 +1,4 @@
-cd ~/audio.pollinations || { echo "Directory not found"; exit 1; }
+cd ~/scratch/audio.pollinations || { echo "Directory not found"; exit 1; }
 
 # Clear port 8000 if in use
 echo "Checking if port 8000 is in use and clearing it..."
@@ -19,6 +19,9 @@ echo "Installing Python requirements..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# Start the app with flask
+# Add both current directory and src directory to PYTHONPATH
+export PYTHONPATH="${PYTHONPATH}:$(pwd):$(pwd)/src"
+
+# Start the app with gunicorn, specifying the working directory
 echo "Starting the app on port 8000..."
-python3 src/app.py &
+python src/app.py
