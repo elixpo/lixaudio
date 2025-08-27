@@ -1,142 +1,40 @@
+import multiprocessing as mp
 import asyncio
-import base64
-import json
-import os
-import tempfile
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import Optional
-import uvicorn
-from loguru import logger
+from load_models import get_models
 
-# Import models directly here (only loaded once)
-from src.boson_multimodal.serve.serve_engine import HiggsAudioServeEngine
-from src.boson_multimodal.data_types import ChatMLSample, Message, AudioContent
-from src.config import TRANSCRIBE_MODEL_SIZE, AUDIO_MODEL_PATH, AUDIO_TOKENIZER_PATH
-import whisper
-
-app = FastAPI()
-
-# Global model instances
-audio_model = None
-transcribe_model = None
-
-class SynthesisRequest(BaseModel):
-    chat_template: str  # JSON string
-    request_id: str
-
-class TranscriptionRequest(BaseModel):
-    audio_base64: str
-    request_id: str
-    model_size: Optional[str] = "small"
-
-def deserialize_chat_template(template_json: str) -> ChatMLSample:
-    """Deserialize JSON string back to ChatMLSample"""
-    messages_data = json.loads(template_json)
+def model_worker(request_queue, response_queue):
+    audio_model, transcribe_model = get_models()
     
-    def deserialize_message(msg_data):
-        content = msg_data["content"]
-        if isinstance(content, list):
-            # Handle audio content
-            deserialized_content = []
-            for item in content:
-                if isinstance(item, dict) and item.get("type") == "audio":
-                    deserialized_content.append(AudioContent(
-                        raw_audio=item["raw_audio"],
-                        audio_url=item["audio_url"]
-                    ))
-                else:
-                    deserialized_content.append(item)
-            content = deserialized_content
-        
-        return Message(role=msg_data["role"], content=content)
-    
-    messages = [deserialize_message(m) for m in messages_data]
-    return ChatMLSample(messages=messages)
-
-@app.on_event("startup")
-async def startup_event():
-    global audio_model, transcribe_model
-    logger.info("Loading models...")
-    
-    try:
-        # Load audio synthesis model
-        audio_model = HiggsAudioServeEngine(AUDIO_MODEL_PATH, AUDIO_TOKENIZER_PATH)
-        logger.info("Audio synthesis model loaded successfully")
-        
-        # Load transcription model
-        transcribe_model = whisper.load_model(TRANSCRIBE_MODEL_SIZE)
-        logger.info(f"Transcription model ({TRANSCRIBE_MODEL_SIZE}) loaded successfully")
-        
-    except Exception as e:
-        logger.error(f"Failed to load models: {e}")
-        raise
-
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "models": {
-            "audio_synthesis": audio_model is not None,
-            "transcription": transcribe_model is not None
-        }
-    }
-
-@app.post("/synthesize")
-async def synthesize_speech_endpoint(request: SynthesisRequest):
-    try:
-        if audio_model is None:
-            raise HTTPException(status_code=503, detail="Audio synthesis model not loaded")
-        
-        logger.info(f"Synthesizing speech for request: {request.request_id}")
-        
-        # Deserialize chat template
-        chat_template = deserialize_chat_template(request.chat_template)
-        
-        # Call the actual synthesis function
-        from src.synthesis import synthesize_speech
-        audio_bytes = await synthesize_speech(chat_template, higgs_engine=audio_model)
-        
-        # Encode audio bytes as base64 for JSON response
-        audio_b64 = base64.b64encode(audio_bytes).decode('utf-8')
-        
-        return {"audio_bytes": audio_b64, "request_id": request.request_id}
-        
-    except Exception as e:
-        logger.error(f"Synthesis error for {request.request_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/transcribe")
-async def transcribe_audio_endpoint(request: TranscriptionRequest):
-    try:
-        if transcribe_model is None:
-            raise HTTPException(status_code=503, detail="Transcription model not loaded")
-        
-        logger.info(f"Transcribing audio for request: {request.request_id}")
-        
-        # Create temporary file for audio
-        tmp_dir = f"/tmp/higgs/{request.request_id}"
-        os.makedirs(tmp_dir, exist_ok=True)
-        audio_path = os.path.join(tmp_dir, f"transcribe_{request.request_id}.wav")
-        
-        # Decode base64 and save to file
-        with open(audio_path, "wb") as f:
-            f.write(base64.b64decode(request.audio_base64))
-        
-        # Transcribe
-        result = transcribe_model.transcribe(audio_path)
-        
-        # Clean up temp file
+    def run_async_synthesis(chat_template):
+        from synthesis import synthesize_speech
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         try:
-            os.remove(audio_path)
-        except:
-            pass
-        
-        return {"text": result["text"], "request_id": request.request_id}
-        
-    except Exception as e:
-        logger.error(f"Transcription error for {request.request_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001, workers=1)
+            return loop.run_until_complete(synthesize_speech(chat_template, higgs_engine=audio_model))
+        finally:
+            loop.close()
+    
+    def run_async_transcription(audio_base64_path, reqID):
+        from transcribe import transcribe_audio_from_base64
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(transcribe_audio_from_base64(audio_base64_path, reqID, higgs_engine=transcribe_model))
+        finally:
+            loop.close()
+    
+    while True:
+        req = request_queue.get()
+        if req == "STOP":
+            break
+        try:
+            if req["type"] == "tts":
+                audio_bytes = run_async_synthesis(req["chat_template"])
+                response_queue.put({"id": req["id"], "result": audio_bytes})
+            elif req["type"] == "transcribe":
+                transcribed_text = run_async_transcription(req["audio_base64_path"], req["reqID"])
+                response_queue.put({"id": req["id"], "result": transcribed_text})
+            else:
+                response_queue.put({"id": req["id"], "error": "Unknown request type"})
+        except Exception as e:
+            response_queue.put({"id": req["id"], "error": str(e)})

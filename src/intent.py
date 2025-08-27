@@ -4,7 +4,7 @@ from typing import Optional
 from dotenv import load_dotenv
 import os 
 import asyncio
-import src.loggerConfig
+import loggerConfig
 load_dotenv()
 
 async def getIntentType(text: str, system: Optional[str] = None, max_tokens: Optional[int] = 300) -> dict:

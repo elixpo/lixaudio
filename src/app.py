@@ -1,25 +1,41 @@
 from flask import Flask, request, jsonify, Response, g
 from flask_cors import CORS
 from loguru import logger
-from src.utility import save_temp_audio, cleanup_temp_file, validate_and_decode_base64_audio, encode_audio_base64
-from src.requestID import reqID
-from src.voiceMap import VOICE_BASE64_MAP
-from src.server import run_audio_pipeline
-from src.model_client import cleanup_model_client
-from src.wittyMessages import WITTY_ERROR_MESSAGES, VALIDATION_ERROR_MESSAGES, get_validation_error, get_witty_error
-import time
+from utility import save_temp_audio, cleanup_temp_file, validate_and_decode_base64_audio, encode_audio_base64
+from requestID import reqID
+from voiceMap import VOICE_BASE64_MAP
+from server import run_audio_pipeline
+import uuid
+import multiprocessing as mp
+from fastapi import FastAPI, Request, HTTPException, Query
+from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+import io
 import traceback
+from wittyMessages import get_validation_error, get_witty_error
+import time
 import asyncio
-import atexit
-import random
+
+
+
+request_queue = None
+response_queue = None
+worker_process = None
+
+def init_worker():
+    """Initialize the worker process"""
+    global request_queue, response_queue, worker_process
+    from model_server import model_worker
+    from model_service import init_model_service
+    
+    request_queue = mp.Queue()
+    response_queue = mp.Queue()
+    worker_process = mp.Process(target=model_worker, args=(request_queue, response_queue))
+    worker_process.start()
+    init_model_service(request_queue, response_queue)
 
 app = Flask(__name__)
 CORS(app)
-
-# Register cleanup function
-atexit.register(lambda: asyncio.run(cleanup_model_client()))
-
-
 
 @app.before_request
 def before_request():
@@ -51,18 +67,25 @@ def audio_endpoint():
             text = request.args.get("text")
             system = request.args.get("system")
             voice = request.args.get("voice")
+            voice_path = None
+            if VOICE_BASE64_MAP.get(voice):
+                named_voice_path = VOICE_BASE64_MAP.get(voice)
+                coded = encode_audio_base64(named_voice_path)
+                voice_path = save_temp_audio(coded, request_id, "clone")
+            else:
+                named_voice_path = VOICE_BASE64_MAP.get("alloy")
+                coded = encode_audio_base64(named_voice_path)
+                voice_path = save_temp_audio(coded, request_id, "clone")
+                
 
-            if not text:
-                logger.warning(f"GET request {request_id} missing text parameter")
-                return jsonify({"error": {"message": get_validation_error(), "code": 400}}), 400
+            if not text or not isinstance(text, str) or not text.strip():
+                return jsonify({"error": {"message": "Missing required 'text' parameter.", "code": 400}}), 400
 
             result = asyncio.run(run_audio_pipeline(
                 reqID=request_id,
                 text=text,
-                voice=voice,
-                synthesis_audio_path=None,
-                clone_audio_transcript=None,
                 system_instruction=system,
+                voice=voice_path
             ))
 
             if result["type"] == "audio":
@@ -77,64 +100,96 @@ def audio_endpoint():
             elif result["type"] == "text":
                 return jsonify({"text": result["data"], "request_id": request_id})
             else:
-                logger.error(f"GET request {request_id} returned unexpected result type: {result}")
-                return jsonify({"error": {"message": get_witty_error(), "code": 500}}), 500
+                return jsonify({"error": {"message": result.get("message", "Unknown error"), "code": 500}}), 500
 
         except Exception as e:
-            logger.error(f"GET error for request {request_id}: {traceback.format_exc()}")
-            return jsonify({"error": {"message": get_witty_error(), "code": 500}}), 500
-        finally:
-            cleanup_temp_file(request_id)
+            logger.error(f"GET error: {traceback.format_exc()}")
+            return jsonify({"error": {"message": str(e), "code": 500}}), 500
 
     elif request.method == "POST":
         try:
-            data = request.get_json()
-            if not data:
-                logger.warning(f"POST request {request_id} missing JSON body")
-                return jsonify({"error": {"message": get_validation_error(), "code": 400}}), 400
+            body = request.get_json(force=True)
+            messages = body.get("messages", [])
+            if not messages or not isinstance(messages, list):
+                return jsonify({"error": {"message": "Missing or invalid 'messages' in payload.", "code": 400}}), 400
 
-            # Extract parameters from JSON
-            text = data.get("text")
-            voice_b64 = data.get("voice_b64")
-            voice_name = data.get("voice_name")
-            speech_audio_b64 = data.get("speech_audio_b64")
-            clone_audio_transcript = data.get("clone_audio_transcript")
-            system_instruction = data.get("system_instruction")
+            # Parse system and user message
+            system_instruction = None
+            user_content = None
+            for msg in messages:
+                if msg.get("role") == "system":
+                    for item in msg.get("content", []):
+                        if item.get("type") == "text":
+                            system_instruction = item.get("text")
+                elif msg.get("role") == "user":
+                    user_content = msg.get("content", [])
 
-            if not text:
-                logger.warning(f"POST request {request_id} missing text parameter")
-                return jsonify({"error": {"message": get_validation_error(), "code": 400}}), 400
+            if not user_content or not isinstance(user_content, list):
+                return jsonify({"error": {"message": "Missing or invalid 'content' in user message.", "code": 400}}), 400
 
+            text = None
+            voice_name = "alloy"
+            voice_b64 = None
+            clone_audio_transcript = None
+            speech_audio_b64 = None
+
+            for item in user_content:
+                if isinstance(item, dict):
+                    if item.get("type") == "text":
+                        text = item.get("text")
+                    elif item.get("type") == "voice":
+                        v = item.get("voice", {})
+                        if isinstance(v, dict):
+                            voice_name = v.get("name", "alloy")
+                            if v.get("data"):
+                                voice_b64 = v.get("data")
+                    elif item.get("type") == "clone_audio_transcript":
+                        clone_audio_transcript = item.get("audio_text")
+                    elif item.get("type") == "speech_audio":
+                        speech_audio_b64 = item.get("audio", {}).get("data")
+
+            if not text or not isinstance(text, str) or not text.strip():
+                return jsonify({"error": {"message": "Missing required 'text' in content.", "code": 400}}), 400
+
+            # If both voice_b64 and a non-default voice_name are provided, error
+            if voice_b64 and voice_name and voice_name != "alloy":
+                return jsonify({"error": {"message": "Provide either 'voice.data' (base64) or 'voice.name', not both.", "code": 400}}), 400
+
+            # Validate and save base64 audio if present
             voice_path = None
             speech_audio_path = None
 
-            # Handle voice cloning
             if voice_b64:
                 try:
-                    validate_and_decode_base64_audio(voice_b64)
-                    voice_path = save_temp_audio(voice_b64, request_id, "clone")
+                    decoded = validate_and_decode_base64_audio(voice_b64, max_duration_sec=5)
+                    voice_path = save_temp_audio(decoded, request_id, "clone")
                 except Exception as e:
-                    logger.warning(f"POST request {request_id} invalid voice_b64: {str(e)}")
-                    return jsonify({"error": {"message": get_validation_error(), "code": 400}}), 400
+                    return jsonify({"error": {"message": f"Invalid voice audio: {e}", "code": 400}}), 400
             elif voice_name and not voice_b64:
-                if voice_name in VOICE_BASE64_MAP:
-                    coded = encode_audio_base64(VOICE_BASE64_MAP[voice_name])
-                    voice_path = save_temp_audio(coded, request_id, "clone")
-                else:
-                    logger.warning(f"POST request {request_id} unknown voice name: {voice_name}")
-                    return jsonify({"error": {"message": get_validation_error(), "code": 400}}), 400
+                try:
+                    if VOICE_BASE64_MAP.get(voice_name):
+                        named_voice_path = VOICE_BASE64_MAP.get(voice_name)
+                        coded = encode_audio_base64(named_voice_path)
+                        voice_path = save_temp_audio(coded, request_id, "clone")
+                    else:
+                        named_voice_path = VOICE_BASE64_MAP.get("alloy")
+                        coded = encode_audio_base64(named_voice_path)
+                        voice_path = save_temp_audio(coded, request_id, "clone")
+                except Exception as e:
+                    return jsonify({"error": {"message": f"Invalid voice name: {e}", "code": 400}}), 400
             else:
-                coded = encode_audio_base64(VOICE_BASE64_MAP.get("alloy"))
+                named_voice_path = VOICE_BASE64_MAP.get("alloy")
+                coded = encode_audio_base64(named_voice_path)
                 voice_path = save_temp_audio(coded, request_id, "clone")
 
-            # Handle speech input
             if speech_audio_b64:
                 try:
-                    validate_and_decode_base64_audio(speech_audio_b64)
-                    speech_audio_path = save_temp_audio(speech_audio_b64, request_id, "speech")
+                    decoded = validate_and_decode_base64_audio(speech_audio_b64, max_duration_sec=60)
+                    speech_audio_path = save_temp_audio(decoded, request_id, "speech")
                 except Exception as e:
-                    logger.warning(f"POST request {request_id} invalid speech_audio_b64: {str(e)}")
-                    return jsonify({"error": {"message": get_validation_error(), "code": 400}}), 400
+                    return jsonify({"error": {"message": f"Invalid speech_audio: {e}", "code": 400}}), 400
+
+            # If voice_path is present, ignore voice_name param
 
             result = asyncio.run(run_audio_pipeline(
                 reqID=request_id,
@@ -157,15 +212,14 @@ def audio_endpoint():
             elif result["type"] == "text":
                 return jsonify({"text": result["data"], "request_id": request_id})
             else:
-                logger.error(f"POST request {request_id} returned unexpected result type: {result}")
-                return jsonify({"error": {"message": get_witty_error(), "code": 500}}), 500
+                return jsonify({"error": {"message": result.get("message", "Unknown error"), "code": 500}}), 500
 
         except Exception as e:
-            logger.error(f"POST error for request {request_id}: {traceback.format_exc()}")
-            return jsonify({"error": {"message": get_witty_error(), "code": 500}}), 500
+            logger.error(f"POST error: {traceback.format_exc()}")
+            return jsonify({"error": {"message": str(e), "code": 500}}), 500
         finally:
             cleanup_temp_file(request_id)
-
+            
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "alive", "message": "Still breathing! 💨"}), 200
@@ -189,3 +243,22 @@ def not_found(e):
 def method_not_allowed(e):
     logger.info(f"405 error: {request.method} on {request.url}")
     return jsonify({"error": {"message": "That HTTP method is not invited to this party! Try a different one! 🎉", "code": 405}}), 405
+
+
+if __name__ == "__main__":
+    mp.set_start_method('spawn', force=True)
+    init_worker()
+    host = "0.0.0.0"
+    port = 8000
+    logger.info(f"Starting Elixpo Audio API Server at {host}:{port}")
+
+    try:
+        # Use Flask's built-in server with threading support
+        app.run(host=host, port=port, debug=False, threaded=True)
+    finally:
+        # Clean up worker process
+        if worker_process and worker_process.is_alive():
+            request_queue.put("STOP")
+            worker_process.join(timeout=5)
+            if worker_process.is_alive():
+                worker_process.terminate()

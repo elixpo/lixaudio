@@ -7,16 +7,16 @@ import asyncio
 import shutil
 from typing import Optional
 
-from src.tools import tools
-from src.config import TEMP_SAVE_DIR
-from src.utility import encode_audio_base64, save_temp_audio, cleanup_temp_file, validate_and_decode_base64_audio
-from src.requestID import reqID
-from src.voiceMap import VOICE_BASE64_MAP
-from src.tts import generate_tts
-from src.ttt import generate_ttt
-from src.sts import generate_sts
-from src.stt import generate_stt
-import src.loggerConfig
+from tools import tools
+from config import TEMP_SAVE_DIR
+from utility import encode_audio_base64, save_temp_audio, cleanup_temp_file, validate_and_decode_base64_audio
+from requestID import reqID
+from voiceMap import VOICE_BASE64_MAP
+from tts import generate_tts
+from ttt import generate_ttt
+from sts import generate_sts
+from stt import generate_stt
+import loggerConfig
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elixpo-audio")
 
@@ -108,7 +108,6 @@ synthesis_audio_path: {synthesis_audio_path if synthesis_audio_path else None}
 system_instruction: {system_instruction if system_instruction else None}
 voice_path: {voice if voice else None}
 clone_audio_transcript: {clone_audio_transcript if clone_audio_transcript else None}
-
 Analyze this request and call the appropriate pipeline function.
 """
 }

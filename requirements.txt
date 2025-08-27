@@ -163,5 +163,4 @@ wcwidth
 Werkzeug
 wrapt
 yarl
-gevent
 gunicorn
