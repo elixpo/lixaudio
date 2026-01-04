@@ -27,7 +27,7 @@ If text input:
     If explicit “text only” request → TTT
     Else → TTS
 TTS Expansion Logic:
-If TTS is selected, determine mode:\
+If TTS is selected, determine mode:
 1. Direct TTS: speak the user’s provided text exactly but remove any labels or overhead instructions
 pass the exact text the user wants to be read aloud to TTS.
 2. Reply-type TTS: user requests newly generated content; generate the content and pass it to TTS.

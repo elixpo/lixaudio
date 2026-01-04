@@ -4,7 +4,6 @@ from typing import Optional
 from dotenv import load_dotenv
 import os
 import asyncio
-import loggerConfig
 
 load_dotenv()
 
