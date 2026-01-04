@@ -22,7 +22,14 @@ sudo ubuntu-drivers list --gpgpu
 
 # recommended to install this version of the driver 
 sudo apt install -y nvidia-driver-535-server nvidia-utils-535-server
+
+sudo apt-get update
+sudo apt-get install ffmpeg libsndfile1
+
 sudo reboot 
+
+
+
 
 # install only the toolkit 
 wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
