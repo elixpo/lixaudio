@@ -1,4 +1,3 @@
-from templates import create_speaker_chat
 from utility import cleanup_temp_file, validate_and_decode_base64_audio
 from voiceMap import VOICE_BASE64_MAP
 import asyncio
@@ -29,42 +28,8 @@ async def generate_tts(text: str, requestID: str, system: Optional[str] = None, 
         clone_path = VOICE_BASE64_MAP.get(voice)
     else:
         clone_path = VOICE_BASE64_MAP.get("alloy")
-
-    if system:
-        system = f"""
-        (
-        "Generate audio following instruction\n\n."
-        "<|scene_desc_start|>\n"
-        "{system} \n"
-        "<|scene_desc_end|>"
-        )
-        """
-    if not system:
-        system = """ 
-        (
-        Generate audio following instruction.
-        <|scene_desc_start|>
-        SPEAKER0: slow-moderate pace;storytelling cadence;warm expressive tone;emotional nuance;dynamic prosody;subtle breaths;smooth inflection shifts;gentle emphasis;present and human;balanced pitch control
-        <|scene_desc_end|>
-        )
-        """
-        
     
-    prepareChatTemplate = create_speaker_chat(
-        text=text,
-        requestID=requestID,
-        system=system,
-        clone_audio_path=clone_path,
-        clone_audio_transcript=clone_text
-    )
-
-    print(f"Generating Audio for {requestID}")
-    audio_numpy, audio_sample = service.speechSynthesis(chatTemplate=prepareChatTemplate)
-    audio_tensor = torch.from_numpy(audio_numpy).unsqueeze(0)
-    buffer = io.BytesIO()
-    torchaudio.save(buffer, audio_tensor, audio_sample, format="wav")
-    return audio_numpy, audio_sample
-
+    
 if __name__ == "__main__":
     class ModelManager(BaseManager): pass
     ModelManager.register("Service")

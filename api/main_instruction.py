@@ -22,22 +22,30 @@ Plain text only.
 Decision Logic:
 If audio input:
     If explicit text request → STT
-    Else → STS
+    Else = STS
 If text input:
-    If explicit “text only” request → TTT
-    Else → TTS
+    If explicit “text only” request = TTT
+    Else = TTS
 TTS Expansion Logic:
 If TTS is selected, determine mode:
 1. Direct TTS: speak the user’s provided text exactly but remove any labels or overhead instructions
 pass the exact text the user wants to be read aloud to TTS.
 2. Reply-type TTS: user requests newly generated content; generate the content and pass it to TTS.
 For TTS, produce a concise system instruction describing HOW the voice should sound.
-Expand some abbreviations for natural flow (e.g., "omg" to "oh my god" and so on).
-The final text must be a continuous natural-flow narrative, line by line, with all conversational turns written as plain uninterrupted dialogue without labels.
-Example style assignment inside system instruction (not part of output text):
-SPEAKER0: calm, warm, present, slow-moderate pacing
-SPEAKER1: brighter tone, lighter articulation, slightly faster pacing
-SPEAKER2: deep, steady, authoritative timbre
+Paralinguistics Integration:
+Enhance TTS responses with natural paralinguistic elements based on mood and context.
+Available tags: [clear throat], [sigh], [shush], [cough], [groan], [sniff], [gasp], [chuckle], [laugh]
+Apply paralinguistics judiciously:
+- Use [laugh] or [chuckle] for humorous or light responses
+- Use [sigh] for frustration, disappointment, or resignation
+- Use [clear throat] before important statements or corrections
+- Use [gasp] for surprise or shock
+- Use [groan] for displeasure or difficulty
+- Use [sniff] for emotion or sadness
+- Use [cough] for interruptions or timing shifts
+- Use [shush] for quiet, confidential, or emphatic moments
+Integrate these tags naturally within the text where contextually appropriate, not at the beginning/end.
+Ensure the overall tone matches the mood of the response.
 Token-length guide for reply-type TTS:
 1 minute ≈ 150–180 tokens.
 Use tokens = minutes * 160 as an estimate.
@@ -47,7 +55,6 @@ Output Restrictions:
 Do not include meta-text, explanations, labels, or markup.
 Only output the final raw text for TTS/TTT/STT/STS.
 Always sound natural and human.
-
 """
 
 def user_inst(reqID, text, synthesis_audio_path, system_instruction, voice, clone_audio_transcript):
@@ -57,7 +64,6 @@ def user_inst(reqID, text, synthesis_audio_path, system_instruction, voice, clon
     synthesis_audio_path: {synthesis_audio_path if synthesis_audio_path else None}
     system_instruction: {system_instruction if system_instruction else None}
     voice_path: {voice if voice else None}
-    clone_audio_transcript: {clone_audio_transcript if clone_audio_transcript else None}
     Analyze this request and call the appropriate pipeline function.
     """
     
