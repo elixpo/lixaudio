@@ -78,10 +78,6 @@ tools = [
                         "type": "string",
                         "description": "Optional system instruction for speech processing."
                     },
-                    "clone_text": {
-                        "type": "string",
-                        "description": "Optional transcript of the cloned voice audio."
-                    },
                     "voice": {
                         "type": "string",
                         "description": "Voice to use for cloning (default: alloy).",
