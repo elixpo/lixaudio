@@ -9,15 +9,13 @@ from typing import Optional
 import torch
 import torchaudio
 from tools import tools
-from config import TEMP_SAVE_DIR, POLLINATIONS_ENDPOINT, TRIAL_MODE
+from config import POLLINATIONS_ENDPOINT_TEXT, TRIAL_MODE
 from utility import encode_audio_base64, save_temp_audio, cleanup_temp_file, validate_and_decode_base64_audio
 from requestID import reqID
 from voiceMap import VOICE_BASE64_MAP
 from main_instruction import inst, user_inst
 from dotenv import load_dotenv
 import io 
-import time
-from timing_stat import TimingStats
 
 load_dotenv()
 
@@ -60,9 +58,6 @@ async def run_audio_pipeline(
         }
     ]
         
-        timing_stats = TimingStats(reqID)
-        pipeline_start = time.time()
-        timing_stats.start_timer("PATHWAY_DECISION")
         
         max_iterations = 1
         current_iteration = 0
@@ -89,7 +84,7 @@ async def run_audio_pipeline(
             headers = {"Content-Type": "application/json",
                        "Authorization": f"Bearer {POLLINATIONS_TOKEN}"}
             try:
-                response = requests.post(POLLINATIONS_ENDPOINT, headers=headers, json=payload)
+                response = requests.post(POLLINATIONS_ENDPOINT_TEXT, headers=headers, json=payload)
                 response.raise_for_status()
                 response_data = response.json()
             except requests.exceptions.RequestException as e:
@@ -97,8 +92,6 @@ async def run_audio_pipeline(
                 logger.error(f"Pollinations API call failed: {e}\n{error_text}")
                 break
             
-            if pathway_decision_time is None:
-                pathway_decision_time = timing_stats.end_timer("PATHWAY_DECISION")
             
             assistant_message = response_data["choices"][0]["message"]
             messages.append(assistant_message)
@@ -109,7 +102,6 @@ async def run_audio_pipeline(
                 final_content = assistant_message.get("content")
                 if final_content:
                     logger.info(f"Final response: {final_content}")
-                    timing_stats.print_summary()
                     return {
                         "type": "error",
                         "message": "No pipeline was executed",
@@ -128,8 +120,6 @@ async def run_audio_pipeline(
                         if fn_name == "generate_tts":
                             from tts import generate_tts 
                             logger.info(f"[{reqID}] Calling TTS pipeline")
-                            timing_stats.start_timer("TTS_GENERATION")
-                            
                             audio_numpy, sample_rate = await generate_tts(
                                 text=fn_args.get("text"),
                                 requestID=fn_args.get("requestID"),
@@ -137,8 +127,6 @@ async def run_audio_pipeline(
                                 clone_text=fn_args.get("clone_text"),
                                 voice=fn_args.get("voice"),
                             )
-                            
-                            timing_stats.end_timer("TTS_GENERATION")
 
                             os.makedirs("genAudio", exist_ok=True)
                             gen_audio_path = f"genAudio/{reqID}.wav"
@@ -151,7 +139,6 @@ async def run_audio_pipeline(
                                 f.write(audio_bytes)
                             logger.info(f"[{reqID}] TTS audio saved to: {gen_audio_path}")
                             
-                            timing_stats.print_summary()
 
                             return {
                                 "type": "audio",
@@ -163,7 +150,6 @@ async def run_audio_pipeline(
                         elif fn_name == "generate_ttt":
                             from ttt import generate_ttt
                             logger.info(f"[{reqID}] Calling TTT pipeline")
-                            timing_stats.start_timer("TTT_GENERATION")
                             
                             text_result = await generate_ttt(
                                 text=fn_args.get("text"),
@@ -171,7 +157,6 @@ async def run_audio_pipeline(
                                 system=fn_args.get("system")
                             )
                             
-                            timing_stats.end_timer("TTT_GENERATION")
                             
                             text_path = os.path.join(higgs_dir, f"{reqID}.txt")
                             with open(text_path, "w", encoding="utf-8") as f:
@@ -179,7 +164,6 @@ async def run_audio_pipeline(
                             
                             logger.info(f"[{reqID}] TTT text saved to: {text_path}")
                             
-                            timing_stats.print_summary()
                             
                             return {
                                 "type": "text",
@@ -191,8 +175,6 @@ async def run_audio_pipeline(
                         elif fn_name == "generate_sts":
                             from sts import generate_sts
                             logger.info(f"[{reqID}] Calling STS pipeline")
-                            timing_stats.start_timer("STS_GENERATION")
-                            
                             audio_bytes, sample_rate = await generate_sts(
                                 text=fn_args.get("text"),
                                 audio_base64_path=fn_args.get("synthesis_audio_path"),
@@ -200,18 +182,14 @@ async def run_audio_pipeline(
                                 system=fn_args.get("system"),
                                 clone_text=fn_args.get("clone_text"),
                                 voice=fn_args.get("voice", "alloy"),
-                                timing_stats=timing_stats
                             )
-                            
-                            timing_stats.end_timer("STS_GENERATION")
+
                             
                             os.makedirs("genAudio", exist_ok=True)
                             gen_audio_path = f"genAudio/{reqID}.wav"
                             with open(gen_audio_path, "wb") as f:
                                 f.write(audio_bytes)
                             logger.info(f"[{reqID}] STS audio saved to: {gen_audio_path}")
-                            
-                            timing_stats.print_summary()
 
                             return {
                                 "type": "audio",
@@ -223,25 +201,20 @@ async def run_audio_pipeline(
                         elif fn_name == "generate_stt":
                             from stt import generate_stt
                             logger.info(f"[{reqID}] Calling STT pipeline")
-                            timing_stats.start_timer("STT_GENERATION")
                             
                             text_result = await generate_stt(
                                 text=fn_args.get("text"),
                                 audio_base64_path=fn_args.get("synthesis_audio_path"),
                                 requestID=fn_args.get("requestID"),
                                 system=fn_args.get("system"),
-                                timing_stats=timing_stats
                             )
                             
-                            timing_stats.end_timer("STT_GENERATION")
 
                             text_path = os.path.join(higgs_dir, f"{reqID}.txt")
                             with open(text_path, "w", encoding="utf-8") as f:
                                 f.write(text_result)
                             
                             logger.info(f"[{reqID}] STT text saved to: {text_path}")
-                            
-                            timing_stats.print_summary()
                             
                             return {
                                 "type": "text",
@@ -255,7 +228,6 @@ async def run_audio_pipeline(
 
                     except Exception as e:
                         logger.error(f"Error executing pipeline {fn_name}: {e}", exc_info=True)
-                        timing_stats.print_summary()
                         return {
                             "type": "error",
                             "message": f"Pipeline {fn_name} failed: {str(e)}",
