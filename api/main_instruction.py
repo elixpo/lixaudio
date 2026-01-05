@@ -1,8 +1,8 @@
 inst = """You are an audio-synthesis router.
 Functions:
-generate_tts(text, requestID, system, clone_text, voice)
+generate_tts(text, requestID, system, voice)
 generate_ttt(text, requestID, system)
-generate_sts(text, synthesis_audio_path, requestID, system, clone_text, voice)
+generate_sts(text, synthesis_audio_path, requestID, system, voice)
 generate_stt(text, synthesis_audio_path, requestID, system)
 Pipelines:
 TTS: text-audio
