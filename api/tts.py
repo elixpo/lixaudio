@@ -19,15 +19,39 @@ manager.connect()
 service = manager.Service()
 
 async def generate_tts(text: str, requestID: str, system: Optional[str] = None, voice: Optional[str] = "alloy") -> tuple:
+    clone_path = None
     if voice and not VOICE_BASE64_MAP.get(voice):
-        with open(voice, "r") as f:
-            audio_data = f.read()
-            if validate_and_decode_base64_audio(audio_data):
-                clone_path = voice
+        try:
+            with open(voice, "r") as f:
+                audio_data = f.read()
+                if validate_and_decode_base64_audio(audio_data):
+                    clone_path = voice
+        except Exception as e:
+            print(f"[{requestID}] Failed to load voice from path {voice}: {e}. Falling back to alloy.")
+            clone_path = VOICE_BASE64_MAP.get("alloy")
     elif voice and VOICE_BASE64_MAP.get(voice):
         clone_path = VOICE_BASE64_MAP.get(voice)
     else:
         clone_path = VOICE_BASE64_MAP.get("alloy")
+    
+    try:
+        print(f"[{requestID}] Generating TTS audio with voice: {voice}")
+        wav, sample_rate = service.speechSynthesis(chatTemplate=text, audio_prompt_path=clone_path)
+        
+        if wav is None:
+            raise RuntimeError("Audio generation failed - GPU out of memory or other error")
+        
+        if isinstance(wav, torch.Tensor):
+            audio_numpy = wav.cpu().numpy()
+        else:
+            audio_numpy = wav
+        
+        print(f"[{requestID}] TTS generation completed. Audio shape: {audio_numpy.shape}, Sample rate: {sample_rate}")
+        return audio_numpy, sample_rate
+        
+    except Exception as e:
+        print(f"[{requestID}] Error during TTS generation: {e}")
+        raise e
     
     
 if __name__ == "__main__":
