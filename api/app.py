@@ -14,8 +14,6 @@ import asyncio
 import os
 import traceback
 from config import WORKERS, THREADS
-from gunicorn.app.base import BaseApplication
-from gunicorn.workers.sync import SyncWorker
 
 app = Flask(__name__)
 CORS(app)

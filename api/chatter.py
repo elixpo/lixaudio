@@ -12,7 +12,8 @@ start_time = time.time()
 model = ChatterboxTurboTTS.from_pretrained(device="cuda", cache_dir=cache_dir)
 # Generate with Paralinguistic Tags
 print(f"Model loaded in {time.time() - start_time:.2f} seconds.")
-text = "Wow, this is absolutely amazing! [laugh] I cannot believe how incredibly awesome this is! [excited] You know, life is just so wonderfully unpredictable and full of surprises! [cough] Sometimes I just want to jump up and down with pure joy! [laugh] This whole experience has been such a delightful roller coaster of emotions and fun! [cough] I'm literally over the moon right now!"
+text = "[cough] [cough] [cough] Oh damn! [sniff] I think I'm coming down with something [clear throat]"
+
 start_time = time.time()
 
 wav = model.generate(
