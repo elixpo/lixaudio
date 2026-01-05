@@ -1,13 +1,14 @@
-from boson_multimodal.serve.serve_engine import HiggsAudioServeEngine, HiggsAudioResponse
 from multiprocessing.managers import BaseManager
 from multiprocessing import Queue
 import whisper
 import torch
+import torchaudio as ta
 from loguru import logger
 import time, resource
 import hashlib
 import string
-from config import TRANSCRIBE_MODEL_SIZE, MAX_CACHE_SIZE_MB, MAX_CACHE_FILES, MAX_CONCURRENT_OPERATIONS, AUDIO_MODEL_PATH, AUDIO_TOKENIZER_PATH
+from config import TRANSCRIBE_MODEL_SIZE, MAX_CACHE_SIZE_MB, MAX_CACHE_FILES, MAX_CONCURRENT_OPERATIONS
+from chatterbox.tts_turbo import ChatterboxTurboTTS
 import os
 import time
 from pathlib import Path
@@ -16,10 +17,11 @@ import threading
 from functools import wraps
 
 BASE62 = string.digits + string.ascii_letters
-MODEL_PATH = "bosonai/higgs-audio-v2-generation-3B-base"
-AUDIO_TOKENIZER_PATH = "bosonai/higgs-audio-v2-tokenizer"
 device = "cuda" if torch.cuda.is_available() else "cpu"
-torch.cuda.set_per_process_memory_fraction(0.5, 0)
+cache_dir = "model_cache"
+Path(cache_dir).mkdir(exist_ok=True)
+if device == "cuda":
+    torch.cuda.set_per_process_memory_fraction(0.5, 0)
 
 
 def base62_encode(num: int) -> str:
@@ -42,12 +44,11 @@ def thread_safe_gpu_operation(func):
 class ipcModules:
     logger.info("Loading IPC Device...")
     def __init__(self):
+        logger.info("Loading Whisper model...")
         self.model = whisper.load_model(TRANSCRIBE_MODEL_SIZE)
-        self.serve_engine = HiggsAudioServeEngine(
-            MODEL_PATH,
-            AUDIO_TOKENIZER_PATH,
-            device=device
-        )
+        logger.info("Loading ChatterboxTurboTTS model...")
+        self.serve_engine = ChatterboxTurboTTS.from_pretrained(device=device, cache_dir=cache_dir)
+        logger.info("Models loaded successfully")
         self.executor = ThreadPoolExecutor(max_workers=MAX_CONCURRENT_OPERATIONS, thread_name_prefix="AudioOp")
         self._gpu_lock = threading.Lock()
         self._operation_semaphore = threading.Semaphore(MAX_CONCURRENT_OPERATIONS)
@@ -136,7 +137,7 @@ class ipcModules:
         encoded = base62_encode(num)
         return encoded[:length]
 
-    def _speechSynthesis_worker(self, chatTemplate: str):
+    def _speechSynthesis_worker(self, chatTemplate: str, audio_prompt_path: str = None):
         with self._operation_semaphore:
             thread_id = threading.current_thread().name
             logger.info(f"[{thread_id}] Starting generation...")
@@ -144,18 +145,19 @@ class ipcModules:
             
             try:
                 with self._gpu_lock:
-                    output: HiggsAudioResponse = self.serve_engine.generate(
-                        chat_ml_sample=chatTemplate,
-                        max_new_tokens=2048,
-                        temperature=1.0,
+                    wav = self.serve_engine.generate(
+                        text=chatTemplate,
                         top_p=0.95,
-                        top_k=50,
-                        stop_strings=["<|end_of_text|>", "<|eot_id|>"],
+                        temperature=0.8,
+                        top_k=1000,
+                        repetition_penalty=1.2,
+                        audio_prompt_path=audio_prompt_path
                     )
-                    torch.cuda.empty_cache()
+                    if device == "cuda":
+                        torch.cuda.empty_cache()
                     
             except RuntimeError as e:
-                if "CUDA out of memory" in str(e):
+                if "CUDA out of memory" in str(e) or "out of memory" in str(e).lower():
                     logger.error(f"[{thread_id}] GPU OOM — request denied")
                     return None, None
                 raise e
@@ -163,14 +165,14 @@ class ipcModules:
             elapsed_time = time.time() - start_time
             logger.info(f"[{thread_id}] Generation time: {elapsed_time:.2f} seconds")
 
-            return output.audio, output.sampling_rate
+            return wav, self.serve_engine.sr
 
-    def speechSynthesis(self, chatTemplate: str):
-        future = self.executor.submit(self._speechSynthesis_worker, chatTemplate)
+    def speechSynthesis(self, chatTemplate: str, audio_prompt_path: str = None):
+        future = self.executor.submit(self._speechSynthesis_worker, chatTemplate, audio_prompt_path)
         return future.result()  
 
-    def speechSynthesis_async(self, chatTemplate: str):
-        return self.executor.submit(self._speechSynthesis_worker, chatTemplate)
+    def speechSynthesis_async(self, chatTemplate: str, audio_prompt_path: str = None):
+        return self.executor.submit(self._speechSynthesis_worker, chatTemplate, audio_prompt_path)
 
     def _transcribe_worker(self, audio_path: str, reqID):
         with self._operation_semaphore:
