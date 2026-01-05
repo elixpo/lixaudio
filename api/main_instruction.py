@@ -57,7 +57,7 @@ Only output the final raw text for TTS/TTT/STT/STS.
 Always sound natural and human.
 """
 
-def user_inst(reqID, text, synthesis_audio_path, system_instruction, voice, clone_audio_transcript):
+def user_inst(reqID, text, synthesis_audio_path, system_instruction, voice):
     return f"""
     requestID: {reqID}
     prompt: {text}

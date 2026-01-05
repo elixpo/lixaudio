@@ -20,7 +20,7 @@ async def getContentRefined(text: str, system: Optional[str] = None, max_tokens:
         system_context = f"\nUser's System Instruction/Style: {system}"
         
     payload = {
-        "model": "mistral",
+        "model": os.getenv("MODEL"),
         "messages": [
             {
                 "role": "system",
