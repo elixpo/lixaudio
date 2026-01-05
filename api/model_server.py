@@ -43,7 +43,7 @@ class ipcModules:
     logger.info("Loading IPC Device...")
     def __init__(self):
         logger.info("Loading Whisper model...")
-        self.model = whisper.load_model(TRANSCRIBE_MODEL_SIZE, device=device, download_root="model_cache", in_memory=True)
+        self.model = whisper.load_model(TRANSCRIBE_MODEL_SIZE, device=device, download_root="model_cache")
         logger.info("Loading ChatterboxTurboTTS model...")
         self.serve_engine = ChatterboxTurboTTS.from_pretrained(device=device, cache_dir=cache_dir)
         logger.info("Models loaded successfully")
@@ -162,7 +162,9 @@ class ipcModules:
 
             elapsed_time = time.time() - start_time
             logger.info(f"[{thread_id}] Generation time: {elapsed_time:.2f} seconds")
-
+            if isinstance(wav, torch.Tensor):
+                wav = wav.cpu().numpy()
+            
             return wav, self.serve_engine.sr
 
     def speechSynthesis(self, text: str, audio_prompt_path: str = None):

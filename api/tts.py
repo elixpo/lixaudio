@@ -3,6 +3,7 @@ from voiceMap import VOICE_BASE64_MAP
 import asyncio
 from typing import Optional
 from multiprocessing.managers import BaseManager
+from multiprocessing import set_start_method
 import os
 import threading
 import time
@@ -12,13 +13,28 @@ import io
 import numpy as np
 import time
 
+# Set spawn method for torch compatibility
+try:
+    set_start_method('spawn', force=True)
+except RuntimeError:
+    pass
+
 class ModelManager(BaseManager): pass
 ModelManager.register("Service")
-manager = ModelManager(address=("localhost", 6000), authkey=b"secret")
-manager.connect()
-service = manager.Service()
+
+def get_service():
+    try:
+        manager = ModelManager(address=("localhost", 6000), authkey=b"secret")
+        manager.connect()
+        return manager.Service()
+    except Exception as e:
+        print(f"Failed to connect to ModelManager: {e}")
+        raise
+
+service = get_service()
 
 async def generate_tts(text: str, requestID: str, system: Optional[str] = None, voice: Optional[str] = "alloy") -> tuple:
+    global service
     clone_path = None
     if voice and not VOICE_BASE64_MAP.get(voice):
         try:
@@ -34,44 +50,57 @@ async def generate_tts(text: str, requestID: str, system: Optional[str] = None, 
     else:
         clone_path = VOICE_BASE64_MAP.get("alloy")
     
-    try:
-        print(f"[{requestID}] Generating TTS audio with voice: {voice}")
-        wav, sample_rate = service.speechSynthesis(text=text, audio_prompt_path=clone_path)
-        
-        if wav is None:
-            raise RuntimeError("Audio generation failed - GPU out of memory or other error")
-        
-        # Convert to WAV bytes
-        if isinstance(wav, torch.Tensor):
-            audio_tensor = wav.unsqueeze(0) if wav.dim() == 1 else wav
-        else:
-            audio_tensor = torch.from_numpy(wav).unsqueeze(0)
-        
-        buffer = io.BytesIO()
-        torchaudio.save(buffer, audio_tensor, sample_rate, format="wav")
-        audio_bytes = buffer.getvalue()
-        
-        print(f"[{requestID}] TTS generation completed. Audio bytes: {len(audio_bytes)}, Sample rate: {sample_rate}")
-        return audio_bytes, sample_rate
-        
-    except Exception as e:
-        print(f"[{requestID}] Error during TTS generation: {e}")
-        raise e
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            print(f"[{requestID}] Generating TTS audio with voice: {voice} (attempt {attempt + 1}/{max_retries})")
+            try:
+                wav, sample_rate = service.speechSynthesis(text=text, audio_prompt_path=clone_path)
+            except Exception as conn_error:
+                # If connection fails, try to reconnect
+                if "digest sent was rejected" in str(conn_error) or "AuthenticationError" in str(type(conn_error)):
+                    print(f"[{requestID}] Connection error, attempting to reconnect...")
+                    service = get_service()
+                    wav, sample_rate = service.speechSynthesis(text=text, audio_prompt_path=clone_path)
+                else:
+                    raise
+            
+            if wav is None:
+                raise RuntimeError("Audio generation failed - GPU out of memory or other error")
+            
+            # Convert to WAV bytes
+            if isinstance(wav, torch.Tensor):
+                audio_tensor = wav.unsqueeze(0) if wav.dim() == 1 else wav
+            elif isinstance(wav, np.ndarray):
+                audio_tensor = torch.from_numpy(wav)
+                if audio_tensor.dim() == 1:
+                    audio_tensor = audio_tensor.unsqueeze(0)
+            else:
+                audio_tensor = torch.from_numpy(wav).unsqueeze(0)
+            
+            buffer = io.BytesIO()
+            torchaudio.save(buffer, audio_tensor, sample_rate, format="wav")
+            audio_bytes = buffer.getvalue()
+            
+            print(f"[{requestID}] TTS generation completed. Audio bytes: {len(audio_bytes)}, Sample rate: {sample_rate}")
+            return audio_bytes, sample_rate
+            
+        except Exception as e:
+            print(f"[{requestID}] Error during TTS generation (attempt {attempt + 1}): {e}")
+            if attempt < max_retries - 1:
+                print(f"[{requestID}] Retrying...")
+                await asyncio.sleep(1)
+            else:
+                print(f"[{requestID}] Max retries exceeded")
+                raise e
     
     
 if __name__ == "__main__":
-    class ModelManager(BaseManager): pass
-    ModelManager.register("Service")
-    manager = ModelManager(address=("localhost", 6000), authkey=b"secret")
-    manager.connect()
-    service = manager.Service()
-
     async def main():
         text = "She sat alone in the quiet room, clutching a faded photograph. Rain tapped gently against the window, echoing the ache in her heart. Years had passed since she lost him, but the emptiness lingered, growing heavier with each memory. She whispered his name, hoping for an answer that would never come. The world moved on, but her world had stopped, frozen in the moment he said goodbye."
         requestID = "request123"
         system = None
         voice = "ash"
-        clone_text = None
         
         def cleanup_cache():
             while True:
@@ -89,8 +118,8 @@ if __name__ == "__main__":
         #     print(f"Cache hit: genAudio/{cache_name}.wav already exists.")
         #     return
         
-        audio_numpy, audio_sample = await generate_tts(text, requestID, system, clone_text, voice)
-        audio_tensor = torch.from_numpy(audio_numpy).unsqueeze(0)
+        audio_bytes, audio_sample = await generate_tts(text, requestID, system, voice)
+        audio_tensor = torch.from_numpy(np.frombuffer(audio_bytes, dtype=np.int16)).unsqueeze(0)
         torchaudio.save(f"{cache_name}.wav", audio_tensor, audio_sample)
         torchaudio.save(f"genAudio/{cache_name}.wav", audio_tensor, audio_sample)
         print(f"Audio saved as {cache_name}.wav")
