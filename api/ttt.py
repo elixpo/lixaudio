@@ -5,10 +5,9 @@ from typing import Optional
 import os 
 from dotenv import load_dotenv
 import requests
-from config import POLLINATIONS_ENDPOINT
+from config import POLLINATIONS_ENDPOINT_TEXT
 import random
 import time
-from timing_stat import TimingStats
 
 load_dotenv()
 
@@ -56,7 +55,7 @@ async def generate_reply(prompt: str, max_tokens: Optional[int] = 5000, timing_s
     }
 
     try:
-        response = requests.post(POLLINATIONS_ENDPOINT, headers=header, json=payload, timeout=30)
+        response = requests.post(POLLINATIONS_ENDPOINT_TEXT, headers=header, json=payload, timeout=30)
         if response.status_code != 200:
             raise RuntimeError(f"Request failed: {response.status_code}, {response.text}")
 
@@ -82,13 +81,11 @@ async def generate_reply(prompt: str, max_tokens: Optional[int] = 5000, timing_s
             timing_stats.end_timer("TTT_API_CALL")
         return f"{prompt}"
 
-async def generate_ttt(text: str, requestID:str, system: str = None, timing_stats: Optional[object] = None):
-    if timing_stats is None:
-        timing_stats = TimingStats(requestID)
+async def generate_ttt(text: str, requestID:str, system: str = None):
     
-    timing_stats.start_timer("TTT_INTENT_PROCESSING")
-    replyText = await generate_reply(f"Prompt: {text} & System: {system}", 300, timing_stats)
-    timing_stats.end_timer("TTT_INTENT_PROCESSING")
+
+    replyText = await generate_reply(f"Prompt: {text} & System: {system}", 300, )
+
     
     print(f"The generated reply text is: {replyText}")
     return replyText

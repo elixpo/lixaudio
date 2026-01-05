@@ -10,7 +10,7 @@ import torch
 import torchaudio
 from tools import tools
 from config import POLLINATIONS_ENDPOINT_TEXT, TRIAL_MODE
-from utility import encode_audio_base64, save_temp_audio, cleanup_temp_file, validate_and_decode_base64_audio
+from utility import encode_audio_base64, save_temp_audio, validate_and_decode_base64_audio
 from requestID import reqID
 from voiceMap import VOICE_BASE64_MAP
 from main_instruction import inst, user_inst
