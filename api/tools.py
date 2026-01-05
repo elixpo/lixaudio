@@ -19,10 +19,6 @@ tools = [
                         "type": "string",
                         "description": "Optional system instruction or scene description for speech synthesis."
                     },
-                    "clone_text": {
-                        "type": "string",
-                        "description": "Optional transcript of the cloned voice audio."
-                    },
                     "voice": {
                         "type": "string",
                         "description": "Voice to use for cloning (default: alloy).",
