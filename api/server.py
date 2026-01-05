@@ -178,7 +178,6 @@ async def run_audio_pipeline(
                                 audio_base64_path=fn_args.get("synthesis_audio_path"),
                                 requestID=fn_args.get("requestID"),
                                 system=fn_args.get("system"),
-                                clone_text=fn_args.get("clone_text"),
                                 voice=fn_args.get("voice", "alloy"),
                             )
 
