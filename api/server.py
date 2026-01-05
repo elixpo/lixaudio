@@ -34,11 +34,10 @@ async def run_audio_pipeline(
     text: str = None,
     voice: str = None,
     synthesis_audio_path: Optional[str] = None, 
-    clone_audio_transcript: Optional[str] = None,
     system_instruction: Optional[str] = None 
 ):
     text = text.strip()
-    print(f"Recieved the parameters: {reqID}, {text}, {voice}, {synthesis_audio_path}, {clone_audio_transcript}, {system_instruction}")
+    print(f"Recieved the parameters: {reqID}, {text}, {voice}, {synthesis_audio_path}, {system_instruction}")
     logger.info(f" [{reqID}] Starting Audio Pipeline")
     logger.info(f"Synthesis audio {synthesis_audio_path} | Clone Audio {voice}")
     higgs_dir = f"/tmp/higgs/{reqID}"
@@ -54,7 +53,7 @@ async def run_audio_pipeline(
 
         {
         "role": "user",
-        "content": user_inst(reqID, text, synthesis_audio_path, system_instruction, voice, clone_audio_transcript)
+        "content": user_inst(reqID, text, synthesis_audio_path, system_instruction, voice)
         }
     ]
         
