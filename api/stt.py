@@ -18,7 +18,7 @@ service = manager.Service()
 async def generate_stt(text: str, audio_base64_path: str, requestID: str, system: Optional[str] = None) -> str:
     transcription = service.transcribe(audio_base64_path, requestID)
     
-    intention_detection = await getContentRefined(f"This is the prompt and {text} and this is the audio transcript {transcription}", system)
+    intention_detection = await getContentRefined(f"This is the prompt: {text} \n\n and this is the audio transcript: {transcription}", system)
     
     content = intention_detection.get("content")
     return content
