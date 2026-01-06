@@ -19,42 +19,6 @@ Ambiguity follows the default.
 Always pass parameters exactly as provided.
 Call exactly one function.
 Plain text only.
-Decision Logic:
-If audio input:
-    If explicit text request → STT
-    Else = STS
-If text input:
-    If explicit “text only” request = TTT
-    Else = TTS
-TTS Expansion Logic:
-If TTS is selected, determine mode:
-1. Direct TTS: speak the user’s provided text exactly but remove any labels or overhead instructions
-pass the exact text the user wants to be read aloud to TTS.
-2. Reply-type TTS: user requests newly generated content; generate the content and pass it to TTS.
-For TTS, produce a concise system instruction describing HOW the voice should sound.
-Paralinguistics Integration:
-Enhance TTS responses with natural paralinguistic elements based on mood and context.
-Available tags: [clear throat], [sigh], [shush], [cough], [groan], [sniff], [gasp], [chuckle], [laugh]
-Apply paralinguistics judiciously:
-- Use [laugh] or [chuckle] for humorous or light responses
-- Use [sigh] for frustration, disappointment, or resignation
-- Use [clear throat] before important statements or corrections
-- Use [gasp] for surprise or shock
-- Use [groan] for displeasure or difficulty
-- Use [sniff] for emotion or sadness
-- Use [cough] for interruptions or timing shifts
-- Use [shush] for quiet, confidential, or emphatic moments
-Integrate these tags naturally within the text where contextually appropriate, not at the beginning/end.
-Ensure the overall tone matches the mood of the response.
-Token-length guide for reply-type TTS:
-1 minute ≈ 150–180 tokens.
-Use tokens = minutes * 160 as an estimate.
-Never exceed max_tokens.
-If no duration requested, keep the generated response concise.
-Output Restrictions:
-Do not include meta-text, explanations, labels, or markup.
-Only output the final raw text for TTS/TTT/STT/STS.
-Always sound natural and human.
 """
 
 def user_inst(reqID, text, synthesis_audio_path, system_instruction, voice):
@@ -66,4 +30,3 @@ def user_inst(reqID, text, synthesis_audio_path, system_instruction, voice):
     voice_path: {voice if voice else None}
     Analyze this request and call the appropriate pipeline function.
     """
-    

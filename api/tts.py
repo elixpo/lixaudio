@@ -12,6 +12,7 @@ import torchaudio
 import io 
 import numpy as np
 import time
+from intent import getContentRefined
 
 try:
     set_start_method('spawn', force=True)
@@ -49,17 +50,25 @@ async def generate_tts(text: str, requestID: str, system: Optional[str] = None, 
     else:
         clone_path = VOICE_BASE64_MAP.get("alloy")
     
+    intention_detection = await getContentRefined(
+            f"This is the prompt and {text} ",
+            system
+        )
+        
+    intention = intention_detection.get("intent")
+    content = intention_detection.get("content")
+    print(f"[{requestID}] Intent: {intention}, Generated content: {content[:100]}...")
     max_retries = 3
     for attempt in range(max_retries):
         try:
             print(f"[{requestID}] Generating TTS audio with voice: {voice} (attempt {attempt + 1}/{max_retries})")
             try:
-                wav, sample_rate = service.speechSynthesis(text=text, audio_prompt_path=clone_path)
+                wav, sample_rate = service.speechSynthesis(text=content, audio_prompt_path=clone_path)
             except Exception as conn_error:
                 if "digest sent was rejected" in str(conn_error) or "AuthenticationError" in str(type(conn_error)):
                     print(f"[{requestID}] Connection error, attempting to reconnect...")
                     service = get_service()
-                    wav, sample_rate = service.speechSynthesis(text=text, audio_prompt_path=clone_path)
+                    wav, sample_rate = service.speechSynthesis(text=content, audio_prompt_path=clone_path)
                 else:
                     raise
             
