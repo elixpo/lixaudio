@@ -314,17 +314,17 @@ def test_sts_with_voice_cloning():
     
     start_time = time.time()
     try:
-        print(f"Reading voice clone audio from {VOICE_CLONE_FILE}...")
-        voice_clone_b64 = read_audio_as_base64(VOICE_CLONE_FILE)
+        print(f"Using voice clone file: {VOICE_CLONE_FILE}")
         
         print(f"Reading speech input from {AUDIO_INPUT_FILE}...")
         speech_audio_b64 = read_audio_as_base64(AUDIO_INPUT_FILE)
         
+        # Pass voice as direct file path (5-8 seconds)
         payload = {
             "messages": [
                 {
                     "role": "system",
-                    "voice": voice_clone_b64,
+                    "voice": str(VOICE_CLONE_FILE),
                     "content": [
                         {"type": "text", "text": "Clone this voice and maintain the speaker's tone and characteristics."}
                     ]
