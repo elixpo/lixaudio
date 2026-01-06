@@ -15,6 +15,9 @@ import asyncio
 import os
 import traceback
 from config import WORKERS, THREADS
+import base64
+import wave
+import io
 
 app = Flask(__name__)
 CORS(app)
@@ -71,26 +74,18 @@ def audio_endpoint():
             
             if not messages or not isinstance(messages, list):
                 return jsonify({"error": {"message": "Missing or invalid 'messages' in payload.", "code": 400}}), 400
-            
-            # Initialize variables
             system_instruction = None
-            system_voice = "alloy"  # Default voice
+            system_voice = "alloy"  
             text = None
             speech_audio_b64 = None
-            clone_audio_transcript = None
             
-            # Parse system message for instructions and voice
             for msg in messages:
                 if msg.get("role") == "system":
-                    # Extract system voice if provided
                     if "voice" in msg:
                         system_voice = msg.get("voice")
-                    # Extract system instruction text
                     for item in msg.get("content", []):
                         if item.get("type") == "text":
                             system_instruction = item.get("text")
-                
-                # Parse user message for text and speech audio
                 elif msg.get("role") == "user":
                     user_content = msg.get("content", [])
                     if not user_content or not isinstance(user_content, list):
@@ -103,29 +98,17 @@ def audio_endpoint():
                             elif item.get("type") == "speech_audio":
                                 speech_audio_b64 = item.get("audio", {}).get("data")
             
-            # Validate text is provided
             if not text or not isinstance(text, str) or not text.strip():
                 return jsonify({"error": {"message": "Missing required 'text' in user content.", "code": 400}}), 400
-            
-            # Determine if system_voice is a voice name or base64 string
             voice_path = None
             voice_identifier = system_voice
             
             if system_voice in VOICE_BASE64_MAP:
-                # It's a predefined voice name
                 voice_path = VOICE_BASE64_MAP[system_voice]
                 voice_identifier = system_voice
             else:
-                # Treat it as base64 audio string for voice cloning
-                # Validate and trim to 8 seconds
                 try:
-                    # Validate the base64 audio
                     validate_and_decode_base64_audio(system_voice, max_duration_sec=8)
-                    
-                    # Check minimum duration (must be at least 5 seconds)
-                    import base64
-                    import wave
-                    import io
                     b64str = system_voice.strip().replace('\n', '').replace('\r', '')
                     missing_padding = len(b64str) % 4
                     if missing_padding:
@@ -169,30 +152,26 @@ def audio_endpoint():
                         }
                     )
             
-            # Process voice for cloning if it's a base64 string
             if system_voice not in VOICE_BASE64_MAP:
                 try:
                     voice_path = save_temp_audio(system_voice, request_id, "clone")
                 except Exception as e:
                     return jsonify({"error": {"message": f"Failed to process voice audio: {e}", "code": 400}}), 400
             
-            # Process speech audio if provided
             speech_audio_path = None
             if speech_audio_b64:
                 try:
-                    decoded = validate_and_decode_base64_audio(speech_audio_b64, max_duration_sec=60)
+                    decoded = validate_and_decode_base64_audio(speech_audio_b64, max_duration_sec=120)
                     saved_audio_path = save_temp_audio(decoded, request_id, "speech")
                     speech_audio_path = convertToAudio(saved_audio_path, request_id)
                 except Exception as e:
                     return jsonify({"error": {"message": f"Invalid speech_audio: {e}", "code": 400}}), 400
             
-            # Run the audio pipeline
             result = asyncio.run(run_audio_pipeline(
                 reqID=request_id,
                 text=text,
                 voice=voice_path,
                 synthesis_audio_path=speech_audio_path,
-                clone_audio_transcript=clone_audio_transcript,
                 system_instruction=system_instruction,
             ))
             
