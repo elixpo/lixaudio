@@ -7,6 +7,7 @@ payload = {
     "messages": [
         {
             "role": "system",
+            "voice" : "alloy" or "<base64_audio_string>" 
             "content": [
                 {"type": "text", "text": "System instructions here"}
             ]
@@ -15,18 +16,6 @@ payload = {
             "role": "user",
             "content": [
                 {"type": "text", "text": "Your prompt text here"},
-                {
-                    "type": "voice",
-                    "voice": {
-                        "name": "alloy",  # or "ballad", "verse", etc.
-                        "data": "<base64_audio_string>",
-                        "format": "wav"
-                    }
-                },
-                {
-                    "type": "clone_audio_transcript",
-                    "audio_text": "Transcription or description of the reference audio"
-                },
                 {
                     "type": "speech_audio",
                     "audio": {"data": "<base64_audio_string>", "format": "wav"}
