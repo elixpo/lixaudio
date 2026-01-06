@@ -1,4 +1,4 @@
-from utility import cleanup_temp_file, validate_and_decode_base64_audio
+from utility import validate_and_decode_base64_audio
 from voiceMap import VOICE_BASE64_MAP
 import asyncio
 from typing import Optional
@@ -13,7 +13,6 @@ import io
 import numpy as np
 import time
 
-# Set spawn method for torch compatibility
 try:
     set_start_method('spawn', force=True)
 except RuntimeError:
@@ -57,7 +56,6 @@ async def generate_tts(text: str, requestID: str, system: Optional[str] = None, 
             try:
                 wav, sample_rate = service.speechSynthesis(text=text, audio_prompt_path=clone_path)
             except Exception as conn_error:
-                # If connection fails, try to reconnect
                 if "digest sent was rejected" in str(conn_error) or "AuthenticationError" in str(type(conn_error)):
                     print(f"[{requestID}] Connection error, attempting to reconnect...")
                     service = get_service()
@@ -67,8 +65,7 @@ async def generate_tts(text: str, requestID: str, system: Optional[str] = None, 
             
             if wav is None:
                 raise RuntimeError("Audio generation failed - GPU out of memory or other error")
-            
-            # Convert to WAV bytes
+
             if isinstance(wav, torch.Tensor):
                 audio_tensor = wav.unsqueeze(0) if wav.dim() == 1 else wav
             elif isinstance(wav, np.ndarray):
