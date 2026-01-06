@@ -32,6 +32,47 @@ def validate_and_decode_base64_audio(b64str, max_duration_sec=None):
 
     return b64str
 
+def trim_base64_audio(b64str, max_duration_sec: int):
+    """Trim base64 audio to a maximum duration and return the trimmed base64 string."""
+    import base64, io, wave
+    
+    b64str = b64str.strip().replace('\n', '').replace('\r', '')
+    missing_padding = len(b64str) % 4
+    if missing_padding:
+        b64str += '=' * (4 - missing_padding)
+    
+    try:
+        audio_bytes = base64.b64decode(b64str)
+        with io.BytesIO(audio_bytes) as audio_io:
+            with wave.open(audio_io, "rb") as wav_file:
+                framerate = wav_file.getframerate()
+                n_channels = wav_file.getnchannels()
+                sample_width = wav_file.getsampwidth()
+                
+                # Calculate frames to read for max_duration_sec
+                frames_to_read = int(framerate * max_duration_sec)
+                audio_frames = wav_file.readframes(frames_to_read)
+        
+        # Write trimmed audio to new WAV
+        output_io = io.BytesIO()
+        with wave.open(output_io, "wb") as out_wav:
+            out_wav.setnchannels(n_channels)
+            out_wav.setsampwidth(sample_width)
+            out_wav.setframerate(framerate)
+            out_wav.writeframes(audio_frames)
+        
+        trimmed_bytes = output_io.getvalue()
+        trimmed_b64 = base64.b64encode(trimmed_bytes).decode("utf-8")
+        
+        # Calculate actual duration
+        n_frames = len(audio_frames) // (n_channels * sample_width)
+        actual_duration = n_frames / float(framerate)
+        logger.debug(f"Trimmed audio to {actual_duration:.2f}s (target: {max_duration_sec}s)")
+        
+        return trimmed_b64
+    except Exception as e:
+        raise Exception(f"Failed to trim base64 audio: {e}")
+
 def save_temp_audio(audio_data: str, req_id: str, usageType: str = "clone") -> str:
     if not audio_data:
         raise ValueError("Empty audio data")

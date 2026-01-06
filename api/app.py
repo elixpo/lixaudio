@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, Response, g
 from flask_cors import CORS
 from loguru import logger
 from gunicorn.app.base import BaseApplication
-from utility import save_temp_audio, validate_and_decode_base64_audio, convertToAudio, cleanup_temp_file
+from utility import save_temp_audio, validate_and_decode_base64_audio, trim_base64_audio, convertToAudio, cleanup_temp_file
 from requestID import reqID
 from voiceMap import VOICE_BASE64_MAP
 from server import run_audio_pipeline
@@ -108,7 +108,10 @@ def audio_endpoint():
                 voice_identifier = system_voice
             else:
                 try:
-                    validate_and_decode_base64_audio(system_voice, max_duration_sec=8)
+                    # Validate the base64 audio exists and is decodable (no max duration check yet)
+                    validate_and_decode_base64_audio(system_voice)
+                    
+                    # Check minimum duration and trim to 8 seconds max
                     b64str = system_voice.strip().replace('\n', '').replace('\r', '')
                     missing_padding = len(b64str) % 4
                     if missing_padding:
@@ -121,6 +124,11 @@ def audio_endpoint():
                             duration = n_frames / float(framerate)
                             if duration < 5:
                                 return jsonify({"error": {"message": "Voice reference audio must be at least 5 seconds long.", "code": 400}}), 400
+                    
+                    # Trim to 8 seconds if longer
+                    if duration > 8:
+                        logger.info(f"Voice audio duration {duration:.2f}s exceeds 8s, trimming to 8 seconds")
+                        system_voice = trim_base64_audio(system_voice, 8)
                     
                     voice_identifier = "custom_voice"
                 except Exception as e:
