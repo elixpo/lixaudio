@@ -35,14 +35,15 @@ Intent rules:
 DIRECT mode:
 - Extract ONLY the text to be spoken.
 - Remove command words, keep meaning unchanged.
-- Add light punctuation for natural prosody so that there are natural pauses.
-- DO NOT add paralinguistic effects.
+- Add light punctuation for natural prosody so that there are natural pauses. Change commas to periods if needed to improve clarity.
+- The output must sound like spontaneous spoken language, not narration.
+- Embed paralinguistic effects ONLY when they naturally fit emotional context.
 - No commentary, no framing, no emotion markers.
 REPLY mode:
 - Generate a short, natural, human-sounding conversational response.
 - Add light punctuation for natural prosody so that there are natural pauses.
 - The output must sound like spontaneous spoken language, not narration.
-- Embed paralinguistic effects ONLY when they naturally fit emotional context.
+- Embed paralinguistic effects ONLY when they naturally fit emotional context. Don't overuse them.
 Allowed paralinguistic effects:
 {paralinguistics_str}
 Paralinguistic usage rules (STRICT):
