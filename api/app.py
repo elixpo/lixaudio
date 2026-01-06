@@ -100,40 +100,57 @@ def audio_endpoint():
             
             if not text or not isinstance(text, str) or not text.strip():
                 return jsonify({"error": {"message": "Missing required 'text' in user content.", "code": 400}}), 400
+
+            request_id = service.cacheName(f"{text}{system_instruction if system_instruction else ''}{system_voice}{str(seed) if seed else 42}")
+            
             voice_path = None
-            voice_identifier = system_voice
             
             if system_voice in VOICE_BASE64_MAP:
                 voice_path = VOICE_BASE64_MAP[system_voice]
-                voice_identifier = system_voice
             else:
-                # Check if it's a direct .wav file path
                 try:
                     if not os.path.isfile(system_voice):
                         return jsonify({"error": {"message": f"Voice '{system_voice}' not found in voice list and is not a valid file path.", "code": 400}}), 400
                     
-                    # Validate it's a WAV file and check duration
                     with wave.open(system_voice, "rb") as wav_file:
                         n_frames = wav_file.getnframes()
                         framerate = wav_file.getframerate()
+                        n_channels = wav_file.getnchannels()
+                        sample_width = wav_file.getsampwidth()
                         duration = n_frames / float(framerate)
                         
                         if duration < 5:
                             return jsonify({"error": {"message": "Voice reference audio must be at least 5 seconds long.", "code": 400}}), 400
                         
+                        # Automatically trim to 8 seconds if longer
                         if duration > 8:
-                            return jsonify({"error": {"message": f"Voice reference audio exceeds 8 seconds ({duration:.2f}s). Please trim to 8 seconds or less.", "code": 400}}), 400
-                    
-                    voice_path = system_voice
-                    voice_identifier = "custom_voice"
+                            logger.info(f"Voice audio is {duration:.2f}s, trimming to 8 seconds...")
+                            frames_to_read = int(framerate * 8)
+                            wav_file.rewind()
+                            audio_frames = wav_file.readframes(frames_to_read)
+                            
+                            # Write trimmed audio to temporary file
+                            tmp_dir = f"/tmp/higgs/{request_id}"
+                            os.makedirs(tmp_dir, exist_ok=True)
+                            trimmed_voice_path = os.path.join(tmp_dir, f"voice_{request_id}_trimmed.wav")
+                            
+                            with wave.open(trimmed_voice_path, "wb") as out_wav:
+                                out_wav.setnchannels(n_channels)
+                                out_wav.setsampwidth(sample_width)
+                                out_wav.setframerate(framerate)
+                                out_wav.writeframes(audio_frames)
+                            
+                            voice_path = trimmed_voice_path
+                            logger.debug(f"Trimmed voice saved to {trimmed_voice_path}")
+                        else:
+                            voice_path = system_voice
                 except wave.Error:
                     return jsonify({"error": {"message": "Voice file is not a valid WAV file.", "code": 400}}), 400
                 except Exception as e:
                     return jsonify({"error": {"message": f"Invalid voice: {str(e)}", "code": 400}}), 400
             
             # Generate cache key
-            generateHashValue = service.cacheName(f"{text}{system_instruction if system_instruction else ''}{voice_identifier}{str(seed) if seed else 42}")
-            request_id = generateHashValue
+            generateHashValue = request_id
             
             # Check cache
             gen_audio_folder = os.path.join(os.path.dirname(__file__), "..", "genAudio")
@@ -184,7 +201,6 @@ def audio_endpoint():
                 system_instruction=system_instruction,
             ))
             
-            # Return response based on result type
             if result["type"] == "audio":
                 return Response(
                     result["data"],
@@ -197,6 +213,7 @@ def audio_endpoint():
             elif result["type"] == "text":
                 return jsonify({
                     "id": request_id,
+
                     "object": "chat.completion",
                     "choices": [
                         {
