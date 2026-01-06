@@ -61,7 +61,7 @@ def health_check():
         "message": "All systems operational! 🚀"
     })
 
-@app.route("/audio", methods=["GET", "POST"])
+@app.route("/generate", methods=["GET", "POST"])
 def audio_endpoint():
     text = None
     voice_name = "alloy"
