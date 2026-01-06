@@ -8,3 +8,4 @@ k8s/secret.yaml
 higgs_aud/
 venv/
 model_cache/
+*.wav
