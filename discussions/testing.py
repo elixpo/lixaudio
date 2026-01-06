@@ -8,32 +8,24 @@ from pathlib import Path
 BASE_URL = "http://localhost:8000"
 GENERATE_ENDPOINT = f"{BASE_URL}/generate"
 
-# Get the discussions directory path
 DISCUSSIONS_DIR = Path(__file__).parent.absolute()
-AUDIO_INPUT_FILE = DISCUSSIONS_DIR / "W8i19O5P6L.wav"
+AUDIO_INPUT_FILE = DISCUSSIONS_DIR / "synthesis.wav"
 VOICE_CLONE_FILE = DISCUSSIONS_DIR / "clone.wav"
 
 
 def read_audio_as_base64(file_path) -> str:
-    """Read an audio file and convert it to base64 string."""
     with open(str(file_path), "rb") as f:
         audio_bytes = f.read()
     return base64.b64encode(audio_bytes).decode("utf-8")
 
 
-
 def save_audio_response(response: requests.Response, output_file) -> None:
-    """Save binary audio response to file."""
     with open(str(output_file), "wb") as f:
         f.write(response.content)
     print(f"✓ Audio saved to {output_file}")
 
 
 def test_tts(text: str = "Hello Good morning and a warm welcome", voice: str = "alloy"):
-    """
-    TTS (Text-to-Speech) Test
-    Converts text to audio using a predefined voice.
-    """
     print("\n" + "="*60)
     print("TEST 1: TTS (Text-to-Speech)")
     print("="*60)
@@ -91,10 +83,6 @@ def test_tts(text: str = "Hello Good morning and a warm welcome", voice: str = "
 
 
 def test_ttt(text: str = "Tell me a short joke about programming."):
-    """
-    TTT (Text-to-Text) Test
-    Sends text and expects a text response (no audio synthesis).
-    """
     print("\n" + "="*60)
     print("TEST 2: TTT (Text-to-Text)")
     print("="*60)
@@ -152,11 +140,6 @@ def test_ttt(text: str = "Tell me a short joke about programming."):
 
 
 def test_sts(voice: str = "ballad"):
-    """
-    STS (Speech-to-Speech) Test
-    Takes input speech audio and transforms it using a different voice.
-    Uses W8i19O5P6L.wav as input audio.
-    """
     print("\n" + "="*60)
     print("TEST 3: STS (Speech-to-Speech)")
     print("="*60)
@@ -224,11 +207,6 @@ def test_sts(voice: str = "ballad"):
 
 
 def test_stt():
-    """
-    STT (Speech-to-Text) Test
-    Transcribes speech audio to text.
-    Uses W8i19O5P6L.wav as input audio.
-    """
     print("\n" + "="*60)
     print("TEST 4: STT (Speech-to-Text)")
     print("="*60)
@@ -296,10 +274,6 @@ def test_stt():
 
 
 def test_sts_with_voice_cloning():
-    """
-    STS with Voice Cloning Test
-    Speech-to-Speech with custom voice cloning using clone.wav as reference.
-    """
     print("\n" + "="*60)
     print("TEST 5: STS (Speech-to-Speech) with Voice Cloning")
     print("="*60)
@@ -319,7 +293,6 @@ def test_sts_with_voice_cloning():
         print(f"Reading speech input from {AUDIO_INPUT_FILE}...")
         speech_audio_b64 = read_audio_as_base64(AUDIO_INPUT_FILE)
         
-        # Pass voice as direct file path (5-8 seconds)
         payload = {
             "messages": [
                 {
@@ -374,7 +347,6 @@ def test_sts_with_voice_cloning():
 
 
 def run_all_tests():
-    """Run all tests and display summary."""
     print("\n" + "🚀 "*20)
     print("STARTING AUDIO POLLINATIONS TEST SUITE")
     print("🚀 "*20)
@@ -409,12 +381,4 @@ def run_all_tests():
 
 
 if __name__ == "__main__":
-    # Run individual tests
-    # test_tts()
-    test_ttt()
-    # test_sts()
-    # test_stt()
-    # test_sts_with_voice_cloning()
-    
-    # Or run all tests
-    # run_all_tests()
+    run_all_tests()
