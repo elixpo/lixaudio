@@ -411,10 +411,10 @@ def run_all_tests():
 if __name__ == "__main__":
     # Run individual tests
     # test_tts()
-    # test_ttt()
+    test_ttt()
     # test_sts()
     # test_stt()
-    test_sts_with_voice_cloning()
+    # test_sts_with_voice_cloning()
     
     # Or run all tests
     # run_all_tests()

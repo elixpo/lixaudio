@@ -17,7 +17,6 @@ async def generate_reply(prompt: str, max_tokens: Optional[int] = 5000, timing_s
     start_time = time.time()
     payload = {
         
-        "model": os.getenv("MODEL"),
         "messages": [
             {
                 "role": "system",
@@ -41,10 +40,10 @@ async def generate_reply(prompt: str, max_tokens: Optional[int] = 5000, timing_s
                 "content": f"{prompt}"
             }
         ],
-        "temperature": 1,
+        "model" : "gemini-fast",
+        "temperature": 0.2,
         "stream": False,
         "private": True,
-        "referrer": "elixpoart",
         "max_tokens": max_tokens,
         "seed": random.randint(1000, 1000000)
     }
@@ -62,12 +61,6 @@ async def generate_reply(prompt: str, max_tokens: Optional[int] = 5000, timing_s
         data = response.json()
         try:
             reply: str = data["choices"][0]["message"]["content"]
-            if "---" in reply and "**Sponsor**" in reply:
-                sponsor_start = reply.find("---")
-                if sponsor_start != -1:
-                    sponsor_section = reply[sponsor_start:]
-                    if "**Sponsor**" in sponsor_section:
-                        reply = reply[:sponsor_start].strip()
         except Exception as e:
             raise RuntimeError(f"Unexpected response format: {data}") from e
         
