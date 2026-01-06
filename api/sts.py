@@ -36,7 +36,6 @@ async def generate_sts(text: str, audio_base64_path: str, requestID: str, system
         transcription = service.transcribe(audio_base64_path, requestID)
         print(f"[{requestID}] Transcription result: {transcription[:100]}...")
         
-        # Detect intent and refine response
         print(f"[{requestID}] Detecting intent and refining content...")
         intention_detection = await getContentRefined(
             f"This is the prompt and {text} and this is the audio transcript {transcription}",
@@ -48,17 +47,23 @@ async def generate_sts(text: str, audio_base64_path: str, requestID: str, system
         
         print(f"[{requestID}] Intent: {intention}, Generated content: {content[:100]}...")
         
-        print(f"[{requestID}] Generating STS audio with voice: {voice}")
+        print(f"[{requestID}] Generating STS audio with voice: {'alloy' if voice is None else voice}...")
         wav, sample_rate = service.speechSynthesis(text=content, audio_prompt_path=clone_path)
         
         if wav is None:
             raise RuntimeError("Audio generation failed - GPU out of memory or other error")
         
-        # Convert to WAV bytes
         if isinstance(wav, torch.Tensor):
-            audio_tensor = wav.unsqueeze(0) if wav.dim() == 1 else wav
+            audio_tensor = wav
         else:
-            audio_tensor = torch.from_numpy(wav).unsqueeze(0)
+            audio_tensor = torch.from_numpy(wav)
+        
+        if audio_tensor.dim() == 1:
+            audio_tensor = audio_tensor.unsqueeze(0)
+        elif audio_tensor.dim() > 2:
+            audio_tensor = audio_tensor.squeeze()
+            if audio_tensor.dim() == 1:
+                audio_tensor = audio_tensor.unsqueeze(0)
         
         buffer = io.BytesIO()
         torchaudio.save(buffer, audio_tensor, sample_rate, format="wav")
@@ -74,8 +79,8 @@ async def generate_sts(text: str, audio_base64_path: str, requestID: str, system
 
 if __name__ == "__main__":
     async def main():
-        text = "How do you feel about this?"
-        audio = "testing/W8i19O5P6L.wav"
+        text = "What shall i do now?"
+        audio = "test-turbo.wav"
         base64_audio = encode_audio_base64(audio)
         saved_audio_path = save_temp_audio(base64_audio, "request224", "speech")
         audio_conv = convertToAudio(saved_audio_path, "request224")

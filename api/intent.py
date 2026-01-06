@@ -35,7 +35,7 @@ async def getContentRefined(text: str, system: Optional[str] = None, max_tokens:
                     REPLY: Generate a short, natural, human-sounding conversational answer. Embed paralinguistic markers based on emotional context and tone:
                        - [laugh], [chuckle], [giggle] for humor, joy, amusement
                        - [sigh], [exhale] for resignation, relief, contemplation
-                       - [gasp], [gasp!] for surprise, astonishment, shock
+                       - [gasp], [gasp] for surprise, astonishment, shock
                        - [cough] [cough] [cough] for emphasis, discomfort, transition
                        - [sniff], [snffle] for emotion, sentiment, sadness
                        - [clear throat] for emphasis, hesitation, authority
@@ -43,7 +43,7 @@ async def getContentRefined(text: str, system: Optional[str] = None, max_tokens:
                        - [shush] for confidentiality, urgency
                        - [whisper] for intimacy, secrecy
                        Always use 3 coughs simultaneously for emphasis and use more of the other effects to create a lively, engaging speech output.
-                       Example: "Oh wow, [gasp!] that's absolutely incredible! I'm [chuckle] so impressed with that!"
+                       Example: "Oh wow, [gasp] that's absolutely incredible! I'm [chuckle] so impressed with that!"
                     For both: optimize for TTS with clear punctuation, natural pauses, simple speakable phrasing.
                     Infer intent by context, not keywords alone.
                     Output ONLY the JSON object. No extra text, no emojis.

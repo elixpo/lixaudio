@@ -18,14 +18,11 @@ service = manager.Service()
 async def generate_stt(text: str, audio_base64_path: str, requestID: str, system: Optional[str] = None) -> str:
     transcription = service.transcribe(audio_base64_path, requestID)
     
-    intention_detection = await getContentRefined(f"This is the prompt: {text} \n\n and this is the audio transcript: {transcription}", system)
-    
-    content = intention_detection.get("content")
-    return content
+    return transcription
 
 if __name__ == "__main__":
     async def main():
-        audio = "testing/W8i19O5P6L.wav"
+        audio = "test-turbo.wav"
         base64_audio = encode_audio_base64(audio)
         saved_path = save_temp_audio(base64_audio, "223Req", "speech")
         audio_conv = convertToAudio(saved_path, "223Req")

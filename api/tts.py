@@ -76,13 +76,19 @@ async def generate_tts(text: str, requestID: str, system: Optional[str] = None, 
                 raise RuntimeError("Audio generation failed - GPU out of memory or other error")
 
             if isinstance(wav, torch.Tensor):
-                audio_tensor = wav.unsqueeze(0) if wav.dim() == 1 else wav
+                audio_tensor = wav
             elif isinstance(wav, np.ndarray):
                 audio_tensor = torch.from_numpy(wav)
+            else:
+                audio_tensor = torch.from_numpy(np.array(wav))
+            
+            # Ensure 2D shape (channels, samples)
+            if audio_tensor.dim() == 1:
+                audio_tensor = audio_tensor.unsqueeze(0)  # Add channel dimension
+            elif audio_tensor.dim() > 2:
+                audio_tensor = audio_tensor.squeeze()  # Remove extra dimensions
                 if audio_tensor.dim() == 1:
                     audio_tensor = audio_tensor.unsqueeze(0)
-            else:
-                audio_tensor = torch.from_numpy(wav).unsqueeze(0)
             
             buffer = io.BytesIO()
             torchaudio.save(buffer, audio_tensor, sample_rate, format="wav")
