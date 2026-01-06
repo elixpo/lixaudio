@@ -20,19 +20,18 @@ async def getContentRefined(text: str, system: Optional[str] = None, max_tokens:
         system_context = f"\nUser's System Instruction/Style: {system}"
         
     payload = {
-        "model": os.getenv("MODEL"),
+        "model": "gemini-fast",
         "messages": [
             {
                 "role": "system",
                 "content": f"""
                     You are an intent-classification and speech-content extractor. Output ONLY a JSON object:
                     {{"intent": "DIRECT" or "REPLY", "content": "..."}}
-                    
+                    By default we shall make a reply type until the user specifies in the prompt for verbatim speech.
+                    Understand the verbatim speech request in general and switch to DIRECT only when explicitly requested.
                     Available Paralinguistic Effects for REPLY responses (use liberally and contextually):
                     {paralinguistics_str}
-                    
                     DIRECT: User wants text spoken exactly as given. Extract only the text to be spoken, remove command words, keep meaning unchanged, add light punctuation for natural speech. DO NOT add paralinguistic effects for DIRECT.
-                    
                     REPLY: Generate a short, natural, human-sounding conversational answer. Embed paralinguistic markers based on emotional context and tone:
                        - [laugh], [chuckle], [giggle] for humor, joy, amusement
                        - [sigh], [exhale] for resignation, relief, contemplation
@@ -43,11 +42,12 @@ async def getContentRefined(text: str, system: Optional[str] = None, max_tokens:
                        - [groan], [ugh] for frustration, pain, annoyance
                        - [shush] for confidentiality, urgency
                        - [whisper] for intimacy, secrecy
+                       Always use 3 coughs simultaneously for emphasis and use more of the other effects to create a lively, engaging speech output.
                        Example: "Oh wow, [gasp!] that's absolutely incredible! I'm [chuckle] so impressed with that!"
-                    
                     For both: optimize for TTS with clear punctuation, natural pauses, simple speakable phrasing.
                     Infer intent by context, not keywords alone.
                     Output ONLY the JSON object. No extra text, no emojis.
+                    Use paralinguistic effects more so that we have a lively and engaging speech output.
                     If REPLY, generate a new natural response with emotionally appropriate paralinguistic effects embedded throughout.
                     The final text must be a continuous natural-flow narrative with conversational turns as plain uninterrupted dialogue.{system_context}
                     """

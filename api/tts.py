@@ -103,10 +103,10 @@ async def generate_tts(text: str, requestID: str, system: Optional[str] = None, 
     
 if __name__ == "__main__":
     async def main():
-        text = "the weather is chilling cold today, it's foggy and everyone is "
+        text = "Verbatim: Scientific progress often arrives quietly, reshaping daily life not through spectacle but through accumulation—small, precise improvements that compound until the world behaves differently than it did before."
         requestID = "request123"
         system = None
-        voice = "ash"
+        voice = "alloy"
         
         def cleanup_cache():
             while True:
@@ -120,9 +120,6 @@ if __name__ == "__main__":
         cleanup_thread = threading.Thread(target=cleanup_cache, daemon=True)
         cleanup_thread.start()
         cache_name = service.cacheName(text)
-        # if os.path.exists(f"genAudio/{cache_name}.wav"):
-        #     print(f"Cache hit: genAudio/{cache_name}.wav already exists.")
-        #     return
         
         audio_bytes, audio_sample = await generate_tts(text, requestID, system, voice)
         audio_tensor = torch.from_numpy(np.frombuffer(audio_bytes, dtype=np.int16)).unsqueeze(0)
