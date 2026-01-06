@@ -259,36 +259,25 @@ async def run_audio_pipeline(
 
 if __name__ == "__main__":
     async def main():
-        text = "OH MY GODD!! A scientist invents a device that lets people swap memories, but chaos erupts when secrets and identities become dangerously tangled."
-        synthesis_audio_path = None
+        text = "Verbatim: OH MY GODD!! A scientist invents a device that lets people swap memories, but chaos erupts when secrets and identities become dangerously tangled."
+        saved_base64_path_speech = None
         requestID = reqID()
         voice = "alloy"
         synthesis_audio_path=None
-        clone_audio_transcript = None
-        saved_base64_path_clone = None
-        saved_base64_path_speech = None
         result = None
 
         if (VOICE_BASE64_MAP.get(voice)):
             print(f"[INFO] Using named voice: {voice}")
-            named_voice_audio_path = VOICE_BASE64_MAP.get(voice)
-            named_voice_audio_base64 = encode_audio_base64(named_voice_audio_path)
-            saved_base64_path_clone = save_temp_audio(named_voice_audio_base64, requestID, "clone")
+            saved_base64_path_clone = VOICE_BASE64_MAP.get(voice)
         else:
             if(validate_and_decode_base64_audio(voice)):
                 saved_base64_path_clone = save_temp_audio(voice, reqID, "clone")
             else:
-                named_voice_audio = VOICE_BASE64_MAP.get("alloy")
-                named_voice_audio_base64 = encode_audio_base64(named_voice_audio)
-                saved_base64_path_clone = save_temp_audio(named_voice_audio_base64, requestID, "clone")
-    
+                saved_base64_path_clone = VOICE_BASE64_MAP.get("alloy")
         if synthesis_audio_path:
             base64_synthesis_audio = encode_audio_base64(synthesis_audio_path)
             saved_base64_path_speech = save_temp_audio(base64_synthesis_audio, reqID, "speech")
-
-        result = await run_audio_pipeline(reqID=requestID, text=text, voice=saved_base64_path_clone, synthesis_audio_path=saved_base64_path_speech, clone_audio_transcript=clone_audio_transcript)
-        
-
+        result = await run_audio_pipeline(reqID=requestID, text=text, voice=saved_base64_path_clone, synthesis_audio_path=saved_base64_path_speech)
         if not result:
             print("[ERROR] Pipeline returned None")
             return
