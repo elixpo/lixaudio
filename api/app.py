@@ -17,6 +17,7 @@ import traceback
 from config import WORKERS, THREADS
 import wave
 import io
+import base64
 
 app = Flask(__name__)
 CORS(app)
@@ -159,9 +160,24 @@ def audio_endpoint():
             speech_audio_path = None
             if speech_audio_b64:
                 try:
-                    decoded = validate_and_decode_base64_audio(speech_audio_b64, max_duration_sec=120)
-                    saved_audio_path = save_temp_audio(decoded, request_id, "speech")
-                    speech_audio_path = convertToAudio(saved_audio_path, request_id)
+                    # Validate base64 audio (max 2 minutes for STS)
+                    validate_and_decode_base64_audio(speech_audio_b64, max_duration_sec=120)
+                    
+                    # Decode base64 to WAV bytes
+                    b64_str = speech_audio_b64.strip().replace('\n', '').replace('\r', '')
+                    missing_padding = len(b64_str) % 4
+                    if missing_padding:
+                        b64_str += '=' * (4 - missing_padding)
+                    audio_bytes = base64.b64decode(b64_str)
+                    
+                    # Save as WAV file for Whisper transcription
+                    tmp_dir = f"/tmp/higgs/{request_id}"
+                    os.makedirs(tmp_dir, exist_ok=True)
+                    speech_audio_path = os.path.join(tmp_dir, f"speech_{request_id}.wav")
+                    with open(speech_audio_path, "wb") as f:
+                        f.write(audio_bytes)
+                    
+                    logger.debug(f"Saved speech audio: {len(audio_bytes)} bytes to {speech_audio_path}")
                 except Exception as e:
                     return jsonify({"error": {"message": f"Invalid speech_audio: {e}", "code": 400}}), 400
             
