@@ -21,10 +21,7 @@ load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elixpo-audio")
-
 POLLINATIONS_TOKEN = os.getenv("POLLI_TOKEN")
-MODEL = os.getenv("MODEL")
-print(f"Token: {POLLINATIONS_TOKEN} Model: {MODEL}")
 
 
 
@@ -66,7 +63,7 @@ async def run_audio_pipeline(
             logger.info(f"Iteration {current_iteration} for reqID={reqID}")
 
             payload = {
-                "model": MODEL,
+                "model": "gemini-fast",
                 "messages": messages,
                 "tools": tools,
                 "tool_choice": "auto",
