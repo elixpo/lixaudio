@@ -55,7 +55,7 @@ async def getContentRefined(text: str, system: Optional[str] = None, max_tokens:
             }
         ],
         "model" : "gemini-fast",
-        "temperature": 0.7,
+        "temperature": 0.2,
         "stream": False,
         "private": True,
         "max_tokens": max_tokens,

@@ -63,76 +63,12 @@ def health_check():
 
 @app.route("/audio", methods=["GET", "POST"])
 def audio_endpoint():
-    if request.method == "GET":
-        try:
-            text = request.args.get("text")
-            system = request.args.get("system")
-            voice = request.args.get("voice")
-            seed = request.args.get("seed")
-            voice_path = None
-            request_id = None
-            generateHashValue = service.cacheName(f"{text}{system if system else ''}{voice if voice else ''}{str(seed) if seed else 42}")
-            request_id = generateHashValue
-            gen_audio_folder = os.path.join(os.path.dirname(__file__), "..", "genAudio")
-            cached_audio_path = os.path.join(gen_audio_folder, f"{generateHashValue}.wav")
-            cached_text_path = os.path.join(gen_audio_folder, f"{generateHashValue}.txt")
-            
-            if os.path.isfile(cached_audio_path) or os.path.isfile(cached_text_path):
-                if os.path.isfile(cached_text_path):
-                    with open(cached_text_path, "r") as f:
-                        cached_text = f.read()
-                    return jsonify({"text": cached_text, "request_id": request_id})
-                else:
-                    with open(cached_audio_path, "rb") as f:
-                        audio_data = f.read()
-                    return Response(
-                        audio_data,
-                        mimetype="audio/wav",
-                        headers={
-                            "Content-Disposition": f"inline; filename={request_id}.wav",
-                            "Content-Length": str(len(audio_data))
-                        }
-                    )
-
-            if voice and not VOICE_BASE64_MAP.get(voice):
-                with open(voice, "r") as f:
-                    audio_data = f.read()
-                    if validate_and_decode_base64_audio(audio_data):
-                        voice_path = voice
-            elif voice and VOICE_BASE64_MAP.get(voice):
-                voice_path = VOICE_BASE64_MAP.get(voice)
-            else:
-                voice_path = VOICE_BASE64_MAP.get("alloy")
-
-            if not text or not isinstance(text, str) or not text.strip():
-                return jsonify({"error": {"message": "Missing required 'text' parameter.", "code": 400}}), 400
-
-            result = asyncio.run(run_audio_pipeline(
-                reqID=request_id,
-                text=text,
-                system_instruction=system,
-                voice=voice_path
-            ))
-
-            if result["type"] == "audio":
-                return Response(
-                    result["data"],
-                    mimetype="audio/wav",
-                    headers={
-                        "Content-Disposition": f"inline; filename={request_id}.wav",
-                        "Content-Length": str(len(result["data"]))
-                    }
-                )
-            elif result["type"] == "text":
-                return jsonify({"text": result["data"], "request_id": request_id})
-            else:
-                return jsonify({"error": {"message": result.get("message", "Unknown error"), "code": 500}}), 500
-
-        except Exception as e:
-            logger.error(f"GET error: {traceback.format_exc()}")
-            return jsonify({"error": {"message": str(e), "code": 500}}), 500
-
-    elif request.method == "POST":
+    text = None
+    voice_name = "alloy"
+    voice_b64 = None
+    clone_audio_transcript = None
+    speech_audio_b64 = None
+    if  request.method == "POST":
         try:
             body = request.get_json(force=True)
             messages = body.get("messages", [])
@@ -152,11 +88,6 @@ def audio_endpoint():
                     user_content = msg.get("content", [])
             if not user_content or not isinstance(user_content, list):
                 return jsonify({"error": {"message": "Missing or invalid 'content' in user message.", "code": 400}}), 400
-            text = None
-            voice_name = "alloy"
-            voice_b64 = None
-            clone_audio_transcript = None
-            speech_audio_b64 = None
             for item in user_content:
                 if isinstance(item, dict):
                     if item.get("type") == "text":
@@ -171,6 +102,16 @@ def audio_endpoint():
                         clone_audio_transcript = item.get("audio_text")
                     elif item.get("type") == "speech_audio":
                         speech_audio_b64 = item.get("audio", {}).get("data")
+
+            if voice and not VOICE_BASE64_MAP.get(voice):
+                with open(voice, "r") as f:
+                    audio_data = f.read()
+                    if validate_and_decode_base64_audio(audio_data):
+                        voice_path = voice
+            elif voice and VOICE_BASE64_MAP.get(voice):
+                voice_path = VOICE_BASE64_MAP.get(voice)
+            else:
+                voice_path = VOICE_BASE64_MAP.get("alloy")
 
             if not text or not isinstance(text, str) or not text.strip():
                 return jsonify({"error": {"message": "Missing required 'text' in content.", "code": 400}}), 400
