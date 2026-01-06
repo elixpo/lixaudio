@@ -382,4 +382,8 @@ def run_all_tests():
 
 if __name__ == "__main__":
     # run_all_tests()
-    test_sts_with_voice_cloning()
+    # test_sts_with_voice_cloning()
+    # test_tts()
+    # test_stt()
+    # test_ttt()
+    test_sts()
