@@ -42,11 +42,8 @@ async def getContentRefined(text: str, system: Optional[str] = None, max_tokens:
                        - [shush] for confidentiality, urgency
                        - [whisper] for intimacy, secrecy
                        Always use 3 coughs simultaneously for emphasis and use more of the other effects to create a lively, engaging speech output.
-                       Example: "Oh wow, [gasp] that's absolutely incredible! I'm [chuckle] so impressed with that!"
                     For both: optimize for TTS with clear punctuation, natural pauses, simple speakable phrasing.
-                    Infer intent by context, not keywords alone.
-                    Output ONLY the JSON object. No extra text, no emojis.
-                    Use paralinguistic effects more so that we have a lively and engaging speech output use a mix of them as needed.
+                    Infer intent by context, not keywords alone. Output ONLY the JSON object. No extra text, no emojis.
                     If REPLY, generate a new natural response with emotionally appropriate paralinguistic effects embedded throughout.
                     The final text must be a continuous natural-flow narrative with conversational turns as plain uninterrupted dialogue.{system_context}
                     """
