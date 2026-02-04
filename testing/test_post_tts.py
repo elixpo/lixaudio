@@ -15,7 +15,7 @@ payload = {
         },
         {
             "role": "user",
-            "content": [{"type": "text", "text": "Yoo where are  you heading to?"}]
+            "content": [{"type": "text", "text": "Complete the joke and also add soe funny humor statement at the end: Why did the scarecrow win an award?"}]
         }
     ],
     "seed": 42
