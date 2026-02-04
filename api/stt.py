@@ -3,7 +3,6 @@ import asyncio
 from dotenv import load_dotenv
 from utility import encode_audio_base64, save_temp_audio, convertToAudio
 from multiprocessing.managers import BaseManager
-from intent import getContentRefined
 
 
 load_dotenv()
