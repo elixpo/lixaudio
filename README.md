@@ -6,7 +6,7 @@
 
 ## Overview
 
-Audio Pollinations is a modular Python framework for advanced audio processing, speech-to-text (STT), text-to-speech (TTS), and semantic audio understanding. It integrates state-of-the-art models and tools for building, serving, and experimenting with multimodal audio applications.
+LixAudio Smart Router for Natural Synthetic Voice Synthesis is a modular Python framework for advanced audio processing, speech-to-text (STT), text-to-speech (TTS), and semantic audio understanding. It integrates state-of-the-art models and tools for building, serving, and experimenting with multimodal audio applications.
 
 ---
 
@@ -290,7 +290,7 @@ Internal endpoint for audio transcription using Whisper model.
 
 ## Transcription Model: Faster-Whisper
 
-Audio Pollinations uses **Faster-Whisper**, an optimized implementation of OpenAI's Whisper model, for speech-to-text transcription.
+LixAudio Smart Router for Natural Synthetic Voice Synthesis uses **Faster-Whisper**, an optimized implementation of OpenAI's Whisper model, for speech-to-text transcription.
 
 ### Supported Languages
 
@@ -346,5 +346,5 @@ The following predefined voices are available for audio synthesis:
 
 ## License
 
-Audio Pollinations is released under the GNU General Public License v3.0 (GPL-3.0). This license ensures that the project remains free and open-source, allowing anyone to use, modify, and distribute the software, provided that any derivative works are also distributed under the same license. For full details, see the [LICENSE](./LICENSE) file.
+LixAudio Smart Router for Natural Synthetic Voice SynthesisPollinations is released under the GNU General Public License v3.0 (GPL-3.0). This license ensures that the project remains free and open-source, allowing anyone to use, modify, and distribute the software, provided that any derivative works are also distributed under the same license. For full details, see the [LICENSE](./LICENSE) file.
 
