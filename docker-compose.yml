@@ -10,6 +10,8 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       - ./logs:/app/logs
+      - ./genAudio:/app/genAudio
+      - ./model_cache:/app/model_cache
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

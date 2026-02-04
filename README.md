@@ -42,7 +42,7 @@ flowchart TB
     H --> I
     
     I --> J[HTTP Request]
-    J --> K[Model Server :8001]
+    J --> K[Model Server :6000]
     
     K --> L{Model Type}
     L -- "Synthesize" --> M[Higgs Audio Engine]
@@ -93,7 +93,7 @@ The project includes a Dockerfile for easy deployment and reproducibility. The D
 - **Python Dependencies:** Installs all required Python packages from `requirements.txt`, including Faster-Whisper for optimized transcription.
 - **Source Code:** Copies the entire project into the container.
 - **Dual Service Architecture:** 
-  - **Model Server (Port 8001):** Single worker handling model inference
+  - **Model Server (Port 6000):** Single worker handling model inference
   - **Flask App (Port 8000):** 30 workers handling API requests
 - **Resource Optimization:** Models loaded once in dedicated server, preventing memory duplication across workers. Faster-Whisper provides optimized inference on CUDA.
 
@@ -261,7 +261,7 @@ curl -X POST http://localhost:8000/generate \
 - **400 Bad Request**: Missing required fields, invalid voice duration, or malformed audio
 - **500 Internal Server Error**: Processing error during audio generation
 
-### Model Server (Port 8001)
+### Model Server (Port 6000)
 
 The model server provides internal API endpoints for model inference:
 
