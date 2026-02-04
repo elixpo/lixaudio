@@ -4,7 +4,6 @@ TRIAL_MODE = False
 TEMP_SAVE_DIR = "/tmp/audio/"
 MAX_CACHE_SIZE_MB = 500 
 MAX_CACHE_FILES = 100    
-TRANSCRIBE_MODEL_SIZE = "small"
 MAX_CONCURRENT_OPERATIONS = 5 
 WORKERS = 4
 THREADS = 8
@@ -22,3 +21,5 @@ paralinguistics_tags = {
 }
 STORE_CACHE = False
 POLLINATIONS_MODEL = "gemini-fast"
+TTS_MODEL = "ResembleAI/chatterbox-turbo"
+TRANSCRIBE_MODEL_SIZE = "small" #Systran/faster-whisper-small
