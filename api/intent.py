@@ -4,7 +4,7 @@ from typing import Optional
 from dotenv import load_dotenv
 import os
 import asyncio
-from config import paralinguistics_tags, POLLINATIONS_ENDPOINT_TEXT
+from config import paralinguistics_tags, POLLINATIONS_ENDPOINT_TEXT, POLLINATIONS_MODEL
 
 load_dotenv()
 
@@ -83,7 +83,7 @@ Output constraints:
                 "content": f"Prompt: {text}"
             }
         ],
-        "model" : "gemini-fast",
+        "model" : POLLINATIONS_MODEL,
         "temperature": 0.4,
         "stream": False,
         "private": True,

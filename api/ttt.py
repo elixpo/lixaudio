@@ -5,7 +5,7 @@ from typing import Optional
 import os 
 from dotenv import load_dotenv
 import requests
-from config import POLLINATIONS_ENDPOINT_TEXT
+from config import POLLINATIONS_ENDPOINT_TEXT, POLLINATIONS_MODEL
 import random
 import time
 
@@ -40,7 +40,7 @@ async def generate_reply(prompt: str, max_tokens: Optional[int] = 5000, timing_s
                 "content": f"{prompt}"
             }
         ],
-        "model" : "gemini-fast",
+        "model" : POLLINATIONS_MODEL,
         "temperature": 0.2,
         "stream": False,
         "private": True,

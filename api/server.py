@@ -9,7 +9,7 @@ from typing import Optional
 import torch
 import torchaudio
 from tools import tools
-from config import POLLINATIONS_ENDPOINT_TEXT, TRIAL_MODE, STORE_CACHE
+from config import POLLINATIONS_ENDPOINT_TEXT, TRIAL_MODE, STORE_CACHE, POLLINATIONS_MODEL
 from utility import encode_audio_base64, save_temp_audio, validate_and_decode_base64_audio
 from requestID import reqID
 from voiceMap import VOICE_BASE64_MAP
@@ -63,7 +63,7 @@ async def run_audio_pipeline(
             logger.info(f"Iteration {current_iteration} for reqID={reqID}")
 
             payload = {
-                "model": "gemini-fast",
+                "model": POLLINATIONS_MODEL,
                 "messages": messages,
                 "tools": tools,
                 "tool_choice": "auto",

@@ -21,3 +21,4 @@ paralinguistics_tags = {
     "laugh": "[laugh]"
 }
 STORE_CACHE = False
+POLLINATIONS_MODEL = "gemini-fast"
