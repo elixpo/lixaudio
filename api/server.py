@@ -111,6 +111,7 @@ async def run_audio_pipeline(
                 fn_args = json.loads(tool_call["function"]["arguments"])
                 logger.info(f"[reqID={reqID}] Executing pipeline: {fn_name} with args: {fn_args}")
                 if not TRIAL_MODE:
+                    gen_audio_path = "N/A"
                     try:
                         if fn_name == "generate_tts":
                             from tts import generate_tts 
@@ -135,7 +136,7 @@ async def run_audio_pipeline(
                             return {
                                 "type": "audio",
                                 "data": audio_bytes,
-                                "file_path": gen_audio_path,
+                                "file_path": gen_audio_path or "N/A",
                                 "reqID": reqID
                             }
 
@@ -185,7 +186,7 @@ async def run_audio_pipeline(
                             return {
                                 "type": "audio",
                                 "data": audio_bytes,
-                                "file_path": gen_audio_path,
+                                "file_path": gen_audio_path or "N/A",
                                 "reqID": reqID
                             }
 

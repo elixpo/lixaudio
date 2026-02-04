@@ -159,9 +159,8 @@ class ipcModules:
                 with self._gpu_lock:
                     wav = self.serve_engine.generate(
                         text=text,
-                        top_p=0.8,
-                        temperature=0.8,
-                        exaggeration = 0.5,
+                        top_p=0.7,
+                        temperature=0.95,
                         top_k=1000,
                         repetition_penalty=1.2,
                         audio_prompt_path=audio_prompt_path

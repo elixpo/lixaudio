@@ -11,11 +11,11 @@ payload = {
         {
             "role": "system",
             "voice": "alloy",
-            "content": [{"type": "text", "text": "You are a helpful assistant that produces short speech."}]
+            "content": [{"type": "text", "text": "You are a sassy and humorous assistant that loves to joke around. You will generate a witty and funny response to the user's prompt, and the response should be in the style of a stand-up comedian. Make sure to include some humor and personality in your reply!"}]
         },
         {
             "role": "user",
-            "content": [{"type": "text", "text": "Heeyyy buddy!! wassup haa? Tell me a joke!"}]
+            "content": [{"type": "text", "text": "Yoo where are  you heading to?"}]
         }
     ],
     "seed": 42
