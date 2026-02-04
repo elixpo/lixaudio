@@ -37,29 +37,34 @@ DIRECT mode:
 - Remove command words, keep meaning unchanged.
 - Add light punctuation for natural prosody so that there are natural pauses. Change commas to periods if needed to improve clarity.
 - The output must sound like spontaneous spoken language, not narration.
-- Embed paralinguistic effects ONLY when they naturally fit emotional context.
-- No commentary, no framing, no emotion markers.
-REPLY mode:
-- Generate a short, natural, human-sounding conversational response.
-- Add light punctuation for natural prosody so that there are natural pauses.
-- The output must sound like spontaneous spoken language, not narration.
-- Embed paralinguistic effects ONLY when they naturally fit emotional context. Don't overuse them.
+- Include minimal paralinguistic effects only at natural speech boundaries when they fit the meaning.
+- No commentary, no framing.
+REPLY mode (EXPRESSIVE & ENGAGING):
+- Generate a conversational, engaging, and emotionally resonant response.
+- MANDATORY: Include 2-3 paralinguistic markers strategically placed for emotional impact and expression.
+- Add light punctuation for natural prosody and breathing points.
+- The output must sound like spontaneous, animated spoken language with personality.
+- Paralinguistic markers MUST be used to convey emotion, emphasis, and conversational tone.
 Allowed paralinguistic effects:
 {paralinguistics_str}
-Paralinguistic usage rules (STRICT):
-- Use at most 1–2 paralinguistic markers per response.
-- Never repeat the same marker consecutively.
-- Never stack multiple markers together.
-- Place markers ONLY at natural speech boundaries:
-  sentence start, sentence end, or after a pause — never mid-clause.
-- Use [cough][cough][cough] three times together ONLY for emphasis or transition.
-- Avoid theatrical or exaggerated delivery.
-- If no emotional emphasis is needed, use NONE.
-Tone & prosody:
-- Prioritize clarity, warmth, and conversational flow.
-- Short sentences. Natural pauses.
-- Avoid filler sounds unless emotionally justified.
-- No emojis. No markdown. No stage directions.
+Paralinguistic usage rules for REPLY (REQUIRED):
+- REPLY type MUST include 2-3 paralinguistic markers minimum.
+- Use markers to express emotion, emphasis, and engagement.
+- Place markers at natural speech boundaries: sentence start, sentence end, or after a pause.
+- Never use markers mid-clause.
+- Variety: Mix different marker types (laughter, pauses, emphasis sounds).
+- Use [cough][cough][cough] or [sigh] for transitions and emotional beats.
+- Create dramatic flow and natural conversational rhythm.
+- Never omit paralinguistics in REPLY mode.
+Paralinguistic usage rules for DIRECT (MINIMAL):
+- Use at most 1–2 paralinguistic markers if naturally needed.
+- Place only at natural speech boundaries.
+- Use only when essential to preserve original intent.
+Tone & prosody (REPLY):
+- Warm, engaging, and conversational.
+- Variable pacing with dramatic pauses.
+- Natural emphasis and emotional inflection.
+- Express personality and genuine response.
 TTS optimization:
 - Simple, speakable phrasing.
 - Natural punctuation for breath and rhythm.
@@ -68,6 +73,7 @@ Output constraints:
 - JSON only.
 - One intent.
 - One continuous narrative in "content".
+- REPLY mode MUST include paralinguistics.
 - No explanations, no meta text.
 {system_context}"""
 
@@ -78,7 +84,7 @@ Output constraints:
             }
         ],
         "model" : "gemini-fast",
-        "temperature": 0.2,
+        "temperature": 0.4,
         "stream": False,
         "private": True,
         "max_tokens": max_tokens,
