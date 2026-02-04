@@ -1,7 +1,6 @@
-# Audio Pollinations
+# LixAudio Smart Router for Natural Synthetic Voice Synthesis
 
-**Motto:**  
-*Seamlessly bridging speech, semantics, and synthesis for creative audio intelligence.*
+![lixaudio](https://github.com/user-attachments/assets/7ac62f06-47b2-4aba-b465-2a000c99d5be)
 
 ---
 
