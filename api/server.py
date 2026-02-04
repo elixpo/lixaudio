@@ -9,7 +9,7 @@ from typing import Optional
 import torch
 import torchaudio
 from tools import tools
-from config import POLLINATIONS_ENDPOINT_TEXT, TRIAL_MODE
+from config import POLLINATIONS_ENDPOINT_TEXT, TRIAL_MODE, STORE_CACHE
 from utility import encode_audio_base64, save_temp_audio, validate_and_decode_base64_audio
 from requestID import reqID
 from voiceMap import VOICE_BASE64_MAP
@@ -122,12 +122,14 @@ async def run_audio_pipeline(
                                 voice=fn_args.get("voice"),
                             )
 
-                            os.makedirs("genAudio", exist_ok=True)
-                            gen_audio_path = f"genAudio/{reqID}.wav"
-                            
-                            with open(gen_audio_path, "wb") as f:
-                                f.write(audio_bytes)
-                            logger.info(f"[{reqID}] TTS audio saved to: {gen_audio_path}")
+
+                            if STORE_CACHE:
+                                os.makedirs("genAudio", exist_ok=True)
+                                gen_audio_path = f"genAudio/{reqID}.wav"
+                                
+                                with open(gen_audio_path, "wb") as f:
+                                    f.write(audio_bytes)
+                                logger.info(f"[{reqID}] TTS audio saved to: {gen_audio_path}")
                             
 
                             return {
@@ -173,12 +175,12 @@ async def run_audio_pipeline(
                                 voice=fn_args.get("voice", "alloy"),
                             )
 
-                            
-                            os.makedirs("genAudio", exist_ok=True)
-                            gen_audio_path = f"genAudio/{reqID}.wav"
-                            with open(gen_audio_path, "wb") as f:
-                                f.write(audio_bytes)
-                            logger.info(f"[{reqID}] STS audio saved to: {gen_audio_path}")
+                            if STORE_CACHE:
+                                os.makedirs("genAudio", exist_ok=True)
+                                gen_audio_path = f"genAudio/{reqID}.wav"
+                                with open(gen_audio_path, "wb") as f:
+                                    f.write(audio_bytes)
+                                logger.info(f"[{reqID}] STS audio saved to: {gen_audio_path}")
 
                             return {
                                 "type": "audio",

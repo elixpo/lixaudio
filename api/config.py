@@ -20,3 +20,4 @@ paralinguistics_tags = {
     "chuckle": "[chuckle]",
     "laugh": "[laugh]"
 }
+STORE_CACHE = True
