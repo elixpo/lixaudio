@@ -1,0 +1,90 @@
+cff-version: 1.2.0
+title: "Audio Pollinations"
+message: "If you use Audio Pollinations in your research or project, please cite it as below."
+type: software
+authors:
+  - family-names: "Elixpo"
+    name-particle: ""
+    given-names: "Team"
+    orcid: ""
+    affiliation: "Elixpo"
+    email: ""
+repository-code: "https://github.com/elixpo/lixaudio"
+repository: "https://github.com/elixpo/lixaudio"
+url: "https://github.com/elixpo/lixaudio"
+abstract: "Audio Pollinations is a modular Python framework for advanced audio processing, speech-to-text (STT), text-to-speech (TTS), and semantic audio understanding. It integrates state-of-the-art models and tools for building, serving, and experimenting with multimodal audio applications."
+keywords:
+  - "audio processing"
+  - "speech recognition"
+  - "speech synthesis"
+  - "voice cloning"
+  - "speech-to-speech"
+  - "machine learning"
+  - "deep learning"
+  - "natural language processing"
+  - "distributed systems"
+  - "GPU acceleration"
+  - "whisper"
+  - "text-to-speech"
+  - "multimodal"
+license: GPL-3.0
+version: 1.0.0
+date-released: 2026-02-04
+preferred-citation:
+  authors:
+    - family-names: "Elixpo"
+      name-particle: ""
+      given-names: "Team"
+  title: "Audio Pollinations: Bridging Speech, Semantics, and Synthesis"
+  type: software
+  year: 2026
+  url: "https://github.com/elixpo/lixaudio"
+  repository-code: "https://github.com/elixpo/lixaudio"
+
+# Additional references and dependencies
+references:
+  - type: software
+    title: "OpenAI Whisper"
+    url: "https://github.com/openai/whisper"
+    authors:
+      - family-names: "Radford"
+        given-names: "Alec"
+      - family-names: "Kim"
+        given-names: "Jong Wook"
+      - family-names: "Xu"
+        given-names: "Tao"
+      - family-names: "Brockman"
+        given-names: "Greg"
+      - family-names: "McLeavey"
+        given-names: "Christine"
+      - family-names: "Sutskever"
+        given-names: "Ilya"
+    year: 2022
+    notes: "Faster-Whisper is an optimized implementation of this model"
+
+  - type: software
+    title: "Faster-Whisper"
+    url: "https://github.com/guillaumekln/faster-whisper"
+    authors:
+      - family-names: "Klein"
+        given-names: "Guillaume"
+    year: 2024
+    notes: "Optimized Whisper implementation for efficient transcription"
+
+  - type: software
+    title: "PyTorch"
+    url: "https://pytorch.org"
+    authors:
+      - family-names: "Paszke"
+        given-names: "Adam"
+    year: 2019
+    notes: "Deep learning framework used for model inference"
+
+  - type: software
+    title: "Flask"
+    url: "https://flask.palletsprojects.com"
+    authors:
+      - family-names: "Ronacher"
+        given-names: "Armin"
+    year: 2010
+    notes: "Web framework for API endpoints"
