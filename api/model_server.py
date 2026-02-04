@@ -1,5 +1,6 @@
 from multiprocessing.managers import BaseManager
-import whisper
+from faster_whisper import WhisperModel
+import numpy as np
 import torch
 from loguru import logger
 import time, resource
@@ -13,6 +14,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 import threading
 from functools import wraps
+from pydub import AudioSegment
 
 BASE62 = string.digits + string.ascii_letters
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -39,11 +41,23 @@ def thread_safe_gpu_operation(func):
             return func(self, *args, **kwargs)
     return wrapper
 
+def load_audio(path: str) -> np.ndarray:
+    """Load audio file and convert to 16kHz mono"""
+    audio = AudioSegment.from_file(path).set_channels(1).set_frame_rate(16000)
+    samples = np.array(audio.get_array_of_samples(), dtype=np.float32)
+    samples /= np.iinfo(audio.array_type).max
+    return samples
+
 class ipcModules:
     logger.info("Loading IPC Device...")
     def __init__(self):
-        logger.info("Loading Whisper model...")
-        self.model = whisper.load_model(TRANSCRIBE_MODEL_SIZE, device=device, download_root="model_cache")
+        logger.info("Loading Faster-Whisper model...")
+        self.model = WhisperModel(
+            TRANSCRIBE_MODEL_SIZE, 
+            device="cuda" if torch.cuda.is_available() else "cpu", 
+            compute_type="int8_float32", 
+            download_root="model_cache"
+        )
         logger.info("Loading ChatterboxTurboTTS model...")
         self.serve_engine = ChatterboxTurboTTS.from_pretrained(device=device, cache_dir=cache_dir)
         logger.info("Models loaded successfully")
@@ -181,10 +195,18 @@ class ipcModules:
             start_time = time.time()
             
             try:
-                result = self.model.transcribe(audio_path)
+                samples = load_audio(audio_path)
+                segments, _ = self.model.transcribe(
+                    samples, 
+                    beam_size=5, 
+                    vad_filter=True, 
+                    language="en", 
+                    task="transcribe"
+                )
+                text = "".join(seg.text for seg in segments)
                 elapsed_time = time.time() - start_time
                 logger.info(f"[{thread_id}] Transcription time: {elapsed_time:.2f} seconds")
-                return result["text"]
+                return text
             except Exception as e:
                 logger.error(f"[{thread_id}] Transcription error: {e}")
                 raise e
