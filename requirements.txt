@@ -82,7 +82,6 @@ nvidia-nvtx-cu12==12.4.127
 omegaconf==2.3.0
 onnx==1.20.0
 onnxruntime==1.23.2
-openai-whisper==20250625
 orjson==3.11.5
 packaging==25.0
 pandas==2.3.3
