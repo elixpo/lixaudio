@@ -13,8 +13,9 @@ Audio Pollinations is a modular Python framework for advanced audio processing, 
 
 ## Features
 
-- **Speech Recognition (STT):** Accurate transcription of audio to text.
+- **Speech Recognition (STT):** Accurate transcription of audio to text using Faster-Whisper (99 language support).
 - **Speech Synthesis (TTS):** Natural-sounding voice generation from text.
+- **Speech-to-Speech (STS):** Transform and resynthesis of speech with voice cloning.
 - **Semantic Audio Processing:** Deep understanding and manipulation of audio content.
 - **Modular Architecture:** Easily extend or swap components.
 - **Distributed Model Server:** Dedicated model server for efficient resource management.
@@ -46,10 +47,10 @@ flowchart TB
     
     K --> L{Model Type}
     L -- "Synthesize" --> M[Higgs Audio Engine]
-    L -- "Transcribe" --> N[Whisper Model]
+    L -- "Transcribe" --> N[Faster-Whisper Model]
     
     M --> O[Audio Generation]
-    N --> P[Text Transcription]
+    N --> P[Text Transcription - 99 Languages]
     
     O --> Q[HTTP Response]
     P --> Q
@@ -90,14 +91,14 @@ The project includes a Dockerfile for easy deployment and reproducibility. The D
 
 - **Base Image:** Uses `python:3.12-bullseye` for a stable Python environment.
 - **System Dependencies:** Installs essential build tools and `ffmpeg` for audio processing.
-- **Python Dependencies:** Installs all required Python packages from `requirements.txt`.
+- **Python Dependencies:** Installs all required Python packages from `requirements.txt`, including Faster-Whisper for optimized transcription.
 - **Source Code:** Copies the entire project into the container.
 - **Dual Service Architecture:** 
   - **Model Server (Port 8001):** Single worker handling model inference
   - **Flask App (Port 8000):** 30 workers handling API requests
-- **Resource Optimization:** Models loaded once in dedicated server, preventing memory duplication.
+- **Resource Optimization:** Models loaded once in dedicated server, preventing memory duplication across workers. Faster-Whisper provides optimized inference on CUDA.
 
-This structure ensures efficient resource utilization with models loaded once while maintaining high concurrency for API requests.
+This structure ensures efficient resource utilization with models loaded once while maintaining high concurrency for API requests. Faster-Whisper provides faster transcription inference compared to standard Whisper.
 
 ---
 ## API Endpoints
@@ -288,6 +289,28 @@ Internal endpoint for audio transcription using Whisper model.
 
 ---
 
+## Transcription Model: Faster-Whisper
+
+Audio Pollinations uses **Faster-Whisper**, an optimized implementation of OpenAI's Whisper model, for speech-to-text transcription.
+
+### Supported Languages
+
+Faster-Whisper supports **99 languages** for automatic speech recognition, including:
+
+**Major Languages:** English, Spanish, French, German, Italian, Portuguese, Dutch, Russian, Chinese (Simplified & Traditional), Japanese, Korean, Arabic, Hindi, Turkish, Vietnamese, Thai, Polish, Indonesian, and more.
+
+The model automatically detects the language of the input audio during transcription, eliminating the need for explicit language selection in most cases.
+
+### Performance Characteristics
+
+- **Inference Device:** CUDA-enabled GPU (with CPU fallback)
+- **Compute Type:** INT8 + Float32 optimization for faster inference
+- **VAD (Voice Activity Detection):** Enabled to skip silent segments
+- **Max Input Duration:** 1.5 minutes (90 seconds)
+- **Output:** Accurate transcription with automatic language detection
+
+---
+
 ## Available Voices
 
 The following predefined voices are available for audio synthesis:
@@ -315,9 +338,10 @@ The following predefined voices are available for audio synthesis:
 |---------|-----------|---------|
 | Voice Cloning Audio | Minimum 5 seconds | Voice reference audio must be at least 5 seconds |
 | Voice Cloning Audio | Maximum 8 seconds | Only first 8 seconds of custom voice audio used |
-| Speech Input (STS) | Maximum 2 minutes | Speech audio input limited to 120 seconds |
+| Speech Input (STS) | Maximum 1.5 minutes | Speech audio input limited to 90 seconds |
 | Text Synthesis | No limit | Text length flexible based on processing power |
 | Seed | Optional | Default: 42, for reproducibility |
+| Transcription Languages | 99 languages | Faster-Whisper supports 99 languages with automatic detection |
 
 ---
 
